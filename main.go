@@ -12,9 +12,24 @@ const (
 	screenHeight = 200
 )
 
+var canChangeFullscreen = true
+
 var theGame *game.Game
 
+func togglFullscreen() {
+	if ebiten.IsKeyPressed(ebiten.KeyF) {
+		if canChangeFullscreen {
+			ebiten.SetFullscreen(!ebiten.IsFullscreen())
+			canChangeFullscreen = false
+		}
+	} else {
+		canChangeFullscreen = true
+	}
+}
+
 func update(screen *ebiten.Image) error {
+	togglFullscreen()
+
 	theGame.Update()
 
 	if ebiten.IsRunningSlowly() {
