@@ -67,6 +67,9 @@ func (g *Game) Update() {
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
 		g.thing.pos.Add(geo.VecXY(0, 50).Times(dt.Seconds()))
 	}
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		g.thing.pos = g.camera.WorldCoords(geo.VecXYi(ebiten.CursorPosition()))
+	}
 	g.camera.Update(dt)
 }
 
