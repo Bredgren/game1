@@ -38,8 +38,8 @@ func New(screenWidth, screenHeight int) *Game {
 	img, _ := ebiten.NewImage(10, 10, ebiten.FilterNearest)
 	img.Fill(color.White)
 	cam := camera.New(screenWidth, screenHeight)
-	cam.MaxDist = 50
-	cam.MaxSpeed = 300
+	cam.MaxDist = 100
+	cam.MaxSpeed = 600
 	cam.Ease = geo.EaseOutQuad
 	t := &thing{}
 	cam.Target = t
@@ -73,18 +73,18 @@ func (g *Game) Update() {
 func (g *Game) Draw(dst *ebiten.Image) {
 	testPos1 := g.camera.ScreenCoords(geo.VecXY(0, 0))
 	g.opts.GeoM.Reset()
-	g.opts.GeoM.Translate(testPos1.XY())
+	g.opts.GeoM.Translate(testPos1.Floored().XY())
 	dst.DrawImage(g.testImg, g.opts)
 
 	testPos2 := g.camera.ScreenCoords(geo.VecXY(40, 0))
 	g.opts.GeoM.Reset()
-	g.opts.GeoM.Translate(testPos2.XY())
+	g.opts.GeoM.Translate(testPos2.Floored().XY())
 	dst.DrawImage(g.testImg, g.opts)
 
 	testPos3 := g.camera.ScreenCoords(g.thing.Pos())
 	g.opts.GeoM.Reset()
 	g.opts.GeoM.Scale(0.5, 0.5)
-	g.opts.GeoM.Translate(testPos3.XY())
+	g.opts.GeoM.Translate(testPos3.Floored().XY())
 	dst.DrawImage(g.testImg, g.opts)
 
 	if g.showDebugInfo {
