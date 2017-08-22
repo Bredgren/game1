@@ -26,6 +26,10 @@ type Camera struct {
 	MaxDist  float64
 	MaxSpeed float64
 	Ease     geo.EaseFn
+	// Shaker is optional. Set its fields and call the Camera's StartShake functions. If
+	// Shaker.Falloff is nil then the Shaker's ShakeConst is used.
+	Shaker     geo.Shaker
+	shakerTime time.Time
 }
 
 // New creates, initializes, and returns a new Camera. The parameters width and height
@@ -34,13 +38,16 @@ type Camera struct {
 // to the Target, though MaxDist=0 on its own is sufficient for that behavior.
 func New(width, height int) *Camera {
 	return &Camera{
-		halfSize: geo.VecXYi(width/2, height/2),
-		Ease:     geo.EaseLinear,
+		halfSize:   geo.VecXYi(width/2, height/2),
+		Ease:       geo.EaseLinear,
+		shakerTime: time.Now(),
 	}
 }
 
 // Update updates the Camera's state simulating dt time passed.
 func (c *Camera) Update(dt time.Duration) {
+	c.shakerTime = c.shakerTime.Add(dt)
+
 	target := c.Target.Pos()
 	distToTarget2 := target.Dist2(c.pos)
 	max2 := c.MaxDist * c.MaxDist
@@ -51,6 +58,12 @@ func (c *Camera) Update(dt time.Duration) {
 		speed := c.Ease(ratio) * c.MaxSpeed
 		vel := target.Minus(c.pos).WithLen(speed)
 		c.pos.Add(vel.Times(dt.Seconds()))
+	}
+
+	if c.Shaker.Falloff != nil {
+		c.offset = c.Shaker.Shake(c.shakerTime)
+	} else {
+		c.offset = c.Shaker.ShakeConst(c.shakerTime)
 	}
 }
 
@@ -68,4 +81,9 @@ func (c *Camera) topLeft() geo.Vec {
 	cameraCenter := c.pos.Plus(c.offset)
 	cameraCenter.Floor()
 	return cameraCenter.Minus(c.halfSize)
+}
+
+// StartShake restarts the Shaker time.
+func (c *Camera) StartShake() {
+	c.Shaker.StartTime = c.shakerTime
 }

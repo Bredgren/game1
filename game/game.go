@@ -43,6 +43,12 @@ func New(screenWidth, screenHeight int) *Game {
 	cam.Ease = geo.EaseOutQuad
 	t := &thing{}
 	cam.Target = t
+
+	cam.Shaker.Amplitude = 30
+	cam.Shaker.Duration = 1 * time.Second
+	cam.Shaker.Frequency = 10
+	cam.Shaker.Falloff = geo.EaseOutQuad
+
 	return &Game{
 		showDebugInfo: true,
 		timeScale:     1.0,
@@ -69,6 +75,9 @@ func (g *Game) Update() {
 	}
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		g.thing.pos = g.camera.WorldCoords(geo.VecXYi(ebiten.CursorPosition()))
+	}
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
+		g.camera.StartShake()
 	}
 	g.camera.Update(dt)
 }
