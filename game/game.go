@@ -18,6 +18,7 @@ type Game struct {
 	timeScale     float64
 	lastUpdate    time.Time
 	camera        *camera.Camera
+	background    *background
 
 	testImg      *ebiten.Image
 	opts         *ebiten.DrawImageOptions
@@ -53,6 +54,7 @@ func New(screenWidth, screenHeight int) *Game {
 		showDebugInfo: true,
 		timeScale:     1.0,
 		camera:        cam,
+		background:    NewBackground(),
 		testImg:       img,
 		opts:          &ebiten.DrawImageOptions{},
 		thing:         t,
@@ -83,7 +85,9 @@ func (g *Game) Update() {
 }
 
 func (g *Game) Draw(dst *ebiten.Image) {
-	testPos1 := g.camera.ScreenCoords(geo.VecXY(0, 0))
+	g.background.Draw(dst, g.camera)
+
+	testPos1 := g.camera.ScreenCoords(geo.VecXY(0, -40))
 	g.opts.GeoM.Reset()
 	g.opts.GeoM.Translate(testPos1.Floored().XY())
 	dst.DrawImage(g.testImg, g.opts)
