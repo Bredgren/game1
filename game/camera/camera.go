@@ -78,9 +78,13 @@ func (c *Camera) WorldCoords(pos geo.Vec) geo.Vec {
 }
 
 func (c *Camera) topLeft() geo.Vec {
+	return c.Center().Minus(c.halfSize)
+}
+
+func (c *Camera) Center() geo.Vec {
 	cameraCenter := c.pos.Plus(c.offset)
 	cameraCenter.Floor()
-	return cameraCenter.Minus(c.halfSize)
+	return cameraCenter
 }
 
 // StartShake restarts the Shaker time.
