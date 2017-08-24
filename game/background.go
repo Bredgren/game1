@@ -3,6 +3,7 @@ package game
 import (
 	"image"
 	"image/color"
+	"math"
 
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/util"
@@ -11,12 +12,15 @@ import (
 )
 
 type background struct {
-	color1        color.Color
-	color2        color.Color
-	maxHeight     float64
-	clouds        []*ebiten.Image
-	cloudScaleMin geo.Vec
-	cloudScaleMax geo.Vec
+	color1         color.Color
+	color2         color.Color
+	maxHeight      float64
+	clouds         []*ebiten.Image
+	cloudScaleMin  geo.Vec
+	cloudScaleMax  geo.Vec
+	cloudMinHight  float64
+	cloudThickness float64
+	padding        float64
 
 	// cloudTest *ebiten.Image
 	// cloudW    int
@@ -26,10 +30,10 @@ type background struct {
 }
 
 func NewBackground() *background {
-	return &background{
+	b := &background{
 		color1:    color.NRGBA{255, 140, 68, 255},
 		color2:    color.NRGBA{0, 0, 10, 255},
-		maxHeight: 500,
+		maxHeight: 700, // When the background becomes dark
 		clouds: []*ebiten.Image{
 			// These were found manually with the cloudFinder method below
 			makeCloud(192, 90, 2.24, 0.77),
@@ -43,8 +47,10 @@ func NewBackground() *background {
 			makeCloud(94, 184, 27.74, 28.81),
 			makeCloud(104, 84, 34.29, 32.91),
 		},
-		cloudScaleMin: geo.VecXY(0.5, 1),
-		cloudScaleMax: geo.VecXY(5, 3),
+		cloudScaleMin:  geo.VecXY(0.5, 0.5),
+		cloudScaleMax:  geo.VecXY(10, 2),
+		cloudMinHight:  150, // Lowest a cloud can be
+		cloudThickness: 700, // Vertical size of the area a cloud can be
 
 		// cloudTest: makeCloud(100, 100, 0, 0),
 		// cloudW:    100,
@@ -52,6 +58,17 @@ func NewBackground() *background {
 		// cloudX:    0,
 		// cloudY:    0,
 	}
+
+	// To make sure clouds don't suddenly appear on screen we select a padding equal to
+	// the maximum size of a cloud and we will draw clouds off screen up to that distance.
+	for _, cloud := range b.clouds {
+		w, h := geo.I2F2(cloud.Size())
+		diagonal := math.Hypot(w, h)
+		max := diagonal * math.Max(b.cloudScaleMax.X, b.cloudScaleMax.Y)
+		b.padding = math.Max(max, b.padding)
+	}
+
+	return b
 }
 
 func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
@@ -59,16 +76,43 @@ func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
 	dst.Fill(util.LerpColor(b.color1, b.color2, height))
 
 	// b.cloudFinder(dst, cam)
+	b.drawClouds(dst, cam)
+}
 
-	pos := cam.ScreenCoords(geo.VecXY(-100, -100))
+func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
+	topLeft := cam.WorldCoords(geo.VecXY(-b.padding, -b.padding))
+	screenSize := geo.VecXYi(dst.Size())
+	bottomRight := cam.WorldCoords(geo.VecXY(b.padding, b.padding).Plus(screenSize))
+	area := geo.RectCornersVec(topLeft, bottomRight)
+
+	// cutoff is used to create some cloudless gaps
+	cutoff := 0.6
+	// gap is the spacing between clouds, lowering creates more/thicker clouds
+	gap := 50
+
 	opts := ebiten.DrawImageOptions{}
-	// opts.GeoM.Rotate(math.Pi / 3)
-	// opts.GeoM.Scale(3, 1)
-	opts.GeoM.Translate(pos.XY())
-	for _, cloud := range b.clouds {
-		dst.DrawImage(cloud, &opts)
-		w, _ := cloud.Size()
-		opts.GeoM.Translate(float64(w+10), 0)
+	// Round to nearest mutliple of gap becuase we need the x values to be consistent.
+	left := float64(((int(area.Left()) + gap/2) / gap) * gap)
+	right := float64(((int(area.Right()) + gap/2) / gap) * gap)
+	for x := left; x < right; x += float64(gap) {
+		noise := geo.Perlin(x*0.5, 0.12345, 0.678901)
+		if noise < cutoff {
+			continue
+		}
+		y := geo.Map(noise, cutoff, 1, -b.cloudMinHight, -b.cloudMinHight-b.cloudThickness)
+		pos := cam.ScreenCoords(geo.VecXY(x, y))
+
+		noise2 := geo.Perlin(x, 0.678901, 0.12345)
+
+		opts.GeoM.Reset()
+		angle := noise2 * 2 * math.Pi
+		opts.GeoM.Rotate(angle)
+		xScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.X, b.cloudScaleMax.X)
+		yScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.Y, b.cloudScaleMax.Y)
+		opts.GeoM.Scale(xScale, yScale)
+		opts.GeoM.Translate(pos.XY())
+		cloudIndex := int(math.Floor(noise2 * float64(len(b.clouds)+1)))
+		dst.DrawImage(b.clouds[cloudIndex], &opts)
 	}
 }
 
