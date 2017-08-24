@@ -76,6 +76,7 @@ func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
 	dst.Fill(util.LerpColor(b.color1, b.color2, height))
 
 	// b.cloudFinder(dst, cam)
+
 	b.drawClouds(dst, cam)
 }
 
@@ -100,17 +101,20 @@ func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
 			continue
 		}
 		y := geo.Map(noise, cutoff, 1, -b.cloudMinHight, -b.cloudMinHight-b.cloudThickness)
-		pos := cam.ScreenCoords(geo.VecXY(x, y))
 
 		noise2 := geo.Perlin(x, 0.678901, 0.12345)
 
 		opts.GeoM.Reset()
-		angle := noise2 * 2 * math.Pi
-		opts.GeoM.Rotate(angle)
+
+		opts.GeoM.Rotate(noise2 * 2 * math.Pi)
+
 		xScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.X, b.cloudScaleMax.X)
 		yScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.Y, b.cloudScaleMax.Y)
 		opts.GeoM.Scale(xScale, yScale)
+
+		pos := cam.ScreenCoords(geo.VecXY(x, y))
 		opts.GeoM.Translate(pos.XY())
+
 		cloudIndex := int(math.Floor(noise2 * float64(len(b.clouds)+1)))
 		dst.DrawImage(b.clouds[cloudIndex], &opts)
 	}
