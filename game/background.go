@@ -12,8 +12,8 @@ import (
 )
 
 type background struct {
-	color1         color.Color
-	color2         color.Color
+	skycolor1      color.Color
+	skyclor1       color.Color
 	maxHeight      float64
 	clouds         []*ebiten.Image
 	cloudScaleMin  geo.Vec
@@ -21,6 +21,8 @@ type background struct {
 	cloudMinHight  float64
 	cloudThickness float64
 	padding        float64
+
+	groundColor color.Color
 
 	// cloudTest *ebiten.Image
 	// cloudW    int
@@ -31,8 +33,8 @@ type background struct {
 
 func NewBackground() *background {
 	b := &background{
-		color1:    color.NRGBA{255, 140, 68, 255},
-		color2:    color.NRGBA{0, 0, 10, 255},
+		skycolor1: color.NRGBA{255, 140, 68, 255},
+		skyclor1:  color.NRGBA{0, 0, 10, 255},
 		maxHeight: 700, // When the background becomes dark
 		clouds: []*ebiten.Image{
 			// These were found manually with the cloudFinder method below
@@ -51,6 +53,8 @@ func NewBackground() *background {
 		cloudScaleMax:  geo.VecXY(10, 2),
 		cloudMinHight:  150, // Lowest a cloud can be
 		cloudThickness: 700, // Vertical size of the area a cloud can be
+
+		groundColor: color.NRGBA{158, 37, 140, 255},
 
 		// cloudTest: makeCloud(100, 100, 0, 0),
 		// cloudW:    100,
@@ -73,7 +77,7 @@ func NewBackground() *background {
 
 func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
 	height := geo.Clamp(-cam.Center().Y, 0, b.maxHeight) / b.maxHeight
-	dst.Fill(util.LerpColor(b.color1, b.color2, height))
+	dst.Fill(util.LerpColor(b.skycolor1, b.skyclor1, height))
 
 	// b.cloudFinder(dst, cam)
 
