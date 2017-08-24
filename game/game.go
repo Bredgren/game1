@@ -12,6 +12,10 @@ import (
 	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
+const (
+	frameTime = (time.Second / time.Nanosecond) / 60 * time.Nanosecond
+)
+
 // Game manages the overall state of the game.
 type Game struct {
 	showDebugInfo bool
@@ -20,6 +24,12 @@ type Game struct {
 	camera        *camera.Camera
 	background    *background
 
+	// Fields only for debugging
+	lastUpdateTime time.Duration
+	lastDrawTime   time.Duration
+	lastTimeSample time.Time
+
+	// temporary stuff
 	testImg      *ebiten.Image
 	opts         *ebiten.DrawImageOptions
 	cameraTarget camera.Target
@@ -62,7 +72,9 @@ func New(screenWidth, screenHeight int) *Game {
 }
 
 func (g *Game) Update() {
-	dt := g.dt()
+	updateStart := time.Now()
+	dt := g.dt(updateStart)
+
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
 		g.thing.pos.Add(geo.VecXY(-50, 0).Times(dt.Seconds()))
 	}
@@ -82,9 +94,18 @@ func (g *Game) Update() {
 		g.camera.StartShake()
 	}
 	g.camera.Update(dt)
+
+	if g.showDebugInfo {
+		updateTime := time.Since(updateStart)
+		if time.Since(g.lastTimeSample) > time.Second || updateTime > g.lastUpdateTime {
+			g.lastUpdateTime = updateTime
+		}
+	}
 }
 
 func (g *Game) Draw(dst *ebiten.Image) {
+	drawStart := time.Now()
+
 	g.background.Draw(dst, g.camera)
 
 	testPos1 := g.camera.ScreenCoords(geo.VecXY(0, -40))
@@ -104,21 +125,39 @@ func (g *Game) Draw(dst *ebiten.Image) {
 	dst.DrawImage(g.testImg, g.opts)
 
 	if g.showDebugInfo {
+		drawTime := time.Since(drawStart)
+		if time.Since(g.lastTimeSample) > time.Second || drawTime > g.lastDrawTime {
+			g.lastDrawTime = drawTime
+		}
+		if time.Since(g.lastTimeSample) > time.Second {
+			g.lastTimeSample = drawStart
+		}
+	}
+
+	if g.showDebugInfo {
 		g.drawDebugInfo(dst)
 	}
 }
 
-func (g *Game) dt() time.Duration {
-	now := time.Now()
+func (g *Game) dt(now time.Time) time.Duration {
 	ns := now.Sub(g.lastUpdate).Nanoseconds()
 	scaled := float64(ns) * g.timeScale
 	dt := time.Duration(scaled) * time.Nanosecond
 	g.lastUpdate = now
+	// Cap dt at twice the frame time to prevent large jumps
+	maxDt := 2 * frameTime
+	if dt > maxDt {
+		dt = maxDt
+	}
 	return dt
 }
 
 func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 	info := []string{
+		fmt.Sprintf("Update+Draw: %0.2f+%0.2f = %0.2f/%0.2f %0.2f%%",
+			g.lastUpdateTime.Seconds()*1000, g.lastDrawTime.Seconds()*1000,
+			(g.lastUpdateTime+g.lastDrawTime).Seconds()*1000, frameTime.Seconds()*1000,
+			(g.lastUpdateTime+g.lastDrawTime).Seconds()/frameTime.Seconds()*100),
 		fmt.Sprintf("FPS %0.2f", ebiten.CurrentFPS()),
 		fmt.Sprintf("Time Scale: %0.2f", g.timeScale),
 	}
