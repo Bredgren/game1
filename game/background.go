@@ -23,6 +23,7 @@ type background struct {
 	padding        float64
 
 	groundColor color.Color
+	groundImg   *ebiten.Image
 
 	// cloudTest *ebiten.Image
 	// cloudW    int
@@ -54,7 +55,7 @@ func NewBackground() *background {
 		cloudMinHight:  150, // Lowest a cloud can be
 		cloudThickness: 700, // Vertical size of the area a cloud can be
 
-		groundColor: color.NRGBA{158, 37, 140, 255},
+		groundColor: color.NRGBA{60, 60, 60, 255},
 
 		// cloudTest: makeCloud(100, 100, 0, 0),
 		// cloudW:    100,
@@ -72,6 +73,9 @@ func NewBackground() *background {
 		b.padding = math.Max(max, b.padding)
 	}
 
+	b.groundImg, _ = ebiten.NewImage(1, 1, ebiten.FilterNearest)
+	b.groundImg.Fill(b.groundColor)
+
 	return b
 }
 
@@ -82,6 +86,7 @@ func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
 	// b.cloudFinder(dst, cam)
 
 	b.drawClouds(dst, cam)
+	b.drawGround(dst, cam)
 }
 
 func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
@@ -122,6 +127,26 @@ func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
 		cloudIndex := int(math.Floor(noise2 * float64(len(b.clouds)+1)))
 		dst.DrawImage(b.clouds[cloudIndex], &opts)
 	}
+}
+
+func (b *background) drawGround(dst *ebiten.Image, cam *camera.Camera) {
+	dstSize := geo.VecXYi(dst.Size())
+	cameraBottomRight := cam.WorldCoords(dstSize)
+	if cameraBottomRight.Y < 0 {
+		return // Ground is not visible
+	}
+
+	cameraTopLeft := cam.WorldCoords(geo.Vec0)
+	groundTopLeft := geo.VecXY(cameraTopLeft.X, 0)
+	topLeft := cam.ScreenCoords(groundTopLeft)
+
+	groundArea := geo.RectCornersVec(topLeft, dstSize)
+
+	opts := ebiten.DrawImageOptions{}
+	opts.GeoM.Scale(groundArea.Size())
+	opts.GeoM.Translate(groundArea.TopLeft())
+
+	dst.DrawImage(b.groundImg, &opts)
 }
 
 func makeCloud(width, height int, xOff, yOff float64) *ebiten.Image {
