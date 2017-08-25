@@ -83,10 +83,10 @@ func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
 	height := geo.Clamp(-cam.Center().Y, 0, b.maxHeight) / b.maxHeight
 	dst.Fill(util.LerpColor(b.skycolor1, b.skyclor1, height))
 
-	// b.cloudFinder(dst, cam)
-
 	b.drawClouds(dst, cam)
 	b.drawGround(dst, cam)
+
+	// b.cloudFinder(dst, cam)
 }
 
 func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {

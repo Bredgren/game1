@@ -108,20 +108,10 @@ func (g *Game) Draw(dst *ebiten.Image) {
 
 	g.background.Draw(dst, g.camera)
 
-	testPos1 := g.camera.ScreenCoords(geo.VecXY(0, -40))
-	g.opts.GeoM.Reset()
-	g.opts.GeoM.Translate(testPos1.Floored().XY())
-	dst.DrawImage(g.testImg, g.opts)
-
-	testPos2 := g.camera.ScreenCoords(geo.VecXY(40, 0))
-	g.opts.GeoM.Reset()
-	g.opts.GeoM.Translate(testPos2.Floored().XY())
-	dst.DrawImage(g.testImg, g.opts)
-
-	testPos3 := g.camera.ScreenCoords(g.thing.Pos())
+	testPos := g.camera.ScreenCoords(g.thing.Pos())
 	g.opts.GeoM.Reset()
 	g.opts.GeoM.Scale(0.5, 0.5)
-	g.opts.GeoM.Translate(testPos3.Floored().XY())
+	g.opts.GeoM.Translate(testPos.Floored().XY())
 	dst.DrawImage(g.testImg, g.opts)
 
 	if g.showDebugInfo {
@@ -132,9 +122,7 @@ func (g *Game) Draw(dst *ebiten.Image) {
 		if time.Since(g.lastTimeSample) > time.Second {
 			g.lastTimeSample = drawStart
 		}
-	}
 
-	if g.showDebugInfo {
 		g.drawDebugInfo(dst)
 	}
 }
