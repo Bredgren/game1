@@ -3,10 +3,13 @@ package game
 import (
 	"fmt"
 	"image/color"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/Bredgren/game1/game/camera"
+	"github.com/Bredgren/game1/game/keymap"
+	"github.com/Bredgren/game1/game/keymap/button"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
@@ -34,6 +37,9 @@ type Game struct {
 	opts         *ebiten.DrawImageOptions
 	cameraTarget camera.Target
 	thing        *thing
+
+	testKeyMapActions keymap.ActionMap
+	testKeyMapLayers  keymap.Layers
 }
 
 type thing struct {
@@ -65,15 +71,50 @@ func New(screenWidth, screenHeight int) *Game {
 		timeScale:     1.0,
 		camera:        cam,
 		background:    NewBackground(),
-		testImg:       img,
-		opts:          &ebiten.DrawImageOptions{},
-		thing:         t,
+
+		// temporary stuff
+		testImg: img,
+		opts:    &ebiten.DrawImageOptions{},
+		thing:   t,
+
+		testKeyMapActions: keymap.ActionMap{
+			ActionHandlerMap: keymap.ActionHandlerMap{
+				"action1": action1Handler,
+				"action2": action2Handler,
+				"action3": action3Handler,
+			},
+			AxisActionHandlerMap: keymap.AxisActionHandlerMap{
+				"axis1": axis1Handler,
+				"axis2": axis2Handler,
+			},
+		},
+		testKeyMapLayers: keymap.Layers{
+			{
+				KeyMap: keymap.KeyMap{
+					button.FromKey(ebiten.Key1): "action3",
+					button.FromKey(ebiten.Key2): "action1",
+				},
+			},
+			{
+				KeyMap: keymap.KeyMap{
+					button.FromKey(ebiten.Key1): "action1",
+					button.FromKey(ebiten.Key2): "action2",
+					button.FromKey(ebiten.Key3): "action1",
+				},
+				AxisMap: keymap.AxisMap{
+					0: "axis1",
+					1: "axis2",
+				},
+			},
+		},
 	}
 }
 
 func (g *Game) Update() {
 	updateStart := time.Now()
 	dt := g.dt(updateStart)
+
+	g.testKeyMapLayers.Update(g.testKeyMapActions)
 
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
 		g.thing.pos.Add(geo.VecXY(-50, 0).Times(dt.Seconds()))
@@ -101,6 +142,15 @@ func (g *Game) Update() {
 			g.lastUpdateTime = updateTime
 		}
 	}
+
+	// numAxis := ebiten.GamepadAxisNum(0)
+	//
+	// log.Println("numAxis", numAxis)
+	// var axisVals []string
+	// for i := 0; i < numAxis; i++ {
+	// 	axisVals = append(axisVals, fmt.Sprintf("%f", ebiten.GamepadAxis(0, i)))
+	// }
+	// log.Println("axisVals", strings.Join(axisVals, ", "))
 }
 
 func (g *Game) Draw(dst *ebiten.Image) {
@@ -150,4 +200,41 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 		fmt.Sprintf("Time Scale: %0.2f", g.timeScale),
 	}
 	ebitenutil.DebugPrint(dst, strings.Join(info, "\n"))
+}
+
+// Temporary stuff
+
+func action1Handler(down bool) bool {
+	if down {
+		log.Println("action1 down")
+	}
+	return false
+}
+
+func action2Handler(down bool) bool {
+	if down {
+		log.Println("action2 down")
+	}
+	return false
+}
+
+func action3Handler(down bool) bool {
+	if down {
+		log.Println("action3 down")
+	}
+	return down
+}
+
+func axis1Handler(val float64) bool {
+	if val != 0 {
+		log.Println("axis1", val)
+	}
+	return false
+}
+
+func axis2Handler(val float64) bool {
+	if val != 0 {
+		log.Println("axis2", val)
+	}
+	return false
 }

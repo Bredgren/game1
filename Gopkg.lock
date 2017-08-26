@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/gopherjs/gopherjs"
   packages = ["js","nosync"]
-  revision = "2b1d432c8a82c9bff0b0baffaeb3ec6e92974112"
+  revision = "95deb33d587c9f6e24b494ea9bdf9648c48f9a60"
 
 [[projects]]
   branch = "master"
@@ -35,13 +35,13 @@
   branch = "master"
   name = "github.com/hajimehoshi/ebiten"
   packages = [".","ebitenutil","ebitenutil/internal/assets","internal","internal/affine","internal/clock","internal/endian","internal/graphics","internal/jni","internal/math","internal/opengl","internal/restorable","internal/sync","internal/ui","internal/web"]
-  revision = "bb6dfeefd45c9149bd60cfbc5dd6f8c8e262f7db"
+  revision = "b05455a2a69c8a83201901eb383b9d631330ba94"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/mobile"
   packages = ["gl"]
-  revision = "e66540375e9941f301a0fbd8134a06076bfc873e"
+  revision = "b2ece8c621624eb86f0532b8f37686e0ea95c3c2"
 
 [[projects]]
   branch = "master"
