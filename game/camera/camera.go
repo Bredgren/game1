@@ -81,6 +81,7 @@ func (c *Camera) topLeft() geo.Vec {
 	return c.Center().Minus(c.halfSize)
 }
 
+// Center returns the camera's center position in world coordinates.
 func (c *Camera) Center() geo.Vec {
 	cameraCenter := c.pos.Plus(c.offset)
 	cameraCenter.Floor()
