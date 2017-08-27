@@ -18,7 +18,7 @@ type ButtonHandler func(down bool) (stopPropagation bool)
 // should be called for the same axis.
 type AxisHandler func(val float64) (stopPropagation bool)
 
-// ActionHanderMap maps an Action to its handler.
+// ActionHandlerMap maps an Action to its handler.
 type ActionHandlerMap map[Action]ButtonHandler
 
 // AxisActionHandlerMap maps an Action to its axis handler.
@@ -34,7 +34,7 @@ type StoppedBtnSet map[button.Button]bool
 // if it maps to true in stoppedBtns. The stoppedBtns map is updated according to the
 // the return values of the handlers that are executed.
 func (km KeyMap) Update(ahm ActionHandlerMap, stoppedBtns StoppedBtnSet) {
-	gamepadId := 0 // Assume one gamepad for now
+	gamepadID := 0 // Assume one gamepad for now
 
 	for btn, action := range km {
 		if stoppedBtns[btn] {
@@ -46,7 +46,7 @@ func (km KeyMap) Update(ahm ActionHandlerMap, stoppedBtns StoppedBtnSet) {
 			if k, ok := btn.Key(); ok {
 				down = ebiten.IsKeyPressed(k)
 			} else if gb, ok := btn.GamepadButton(); ok {
-				down = ebiten.IsGamepadButtonPressed(gamepadId, gb)
+				down = ebiten.IsGamepadButtonPressed(gamepadID, gb)
 			} else if mb, ok := btn.MouseButton(); ok {
 				down = ebiten.IsMouseButtonPressed(mb)
 			}
@@ -65,7 +65,7 @@ type StoppedAxisSet map[int]bool
 // if it maps to true in stoppedAxis. The stoppedAxis map is updated according to the
 // the return values of the handlers that are executed.
 func (am AxisMap) Update(ahm AxisActionHandlerMap, stoppedAxis StoppedAxisSet) {
-	gamepadId := 0 // Assume one gamepad for now
+	gamepadID := 0 // Assume one gamepad for now
 
 	for axis, action := range am {
 		if stoppedAxis[axis] {
@@ -73,7 +73,7 @@ func (am AxisMap) Update(ahm AxisActionHandlerMap, stoppedAxis StoppedAxisSet) {
 		}
 
 		if actionFn, ok := ahm[action]; ok {
-			stoppedAxis[axis] = actionFn(ebiten.GamepadAxis(gamepadId, axis))
+			stoppedAxis[axis] = actionFn(ebiten.GamepadAxis(gamepadID, axis))
 		}
 	}
 }
@@ -84,6 +84,14 @@ type Map struct {
 	AxisMap
 }
 
+// NewMap creates a new Map type with empty KeyMap and AxisMap.
+func NewMap() Map {
+	return Map{
+		KeyMap:  make(KeyMap),
+		AxisMap: make(AxisMap),
+	}
+}
+
 //ActionMap groups the handler map types.
 type ActionMap struct {
 	ActionHandlerMap
@@ -92,9 +100,10 @@ type ActionMap struct {
 
 // Layers is a slice of Maps. This can be used to combine and use multiple Maps at once.
 // Maps are handled in order and if more than one KeyMap has a handler for the same Button
-// then ther earlier ones have the option to stop propagation to later handlers.
+// then their earlier ones have the option to stop propagation to later handlers.
 type Layers []Map
 
+// Update calls the Update methods for each Map type in the list.
 func (l Layers) Update(am ActionMap) {
 	stoppedBtns := StoppedBtnSet{}
 	stoppedAxis := StoppedAxisSet{}
