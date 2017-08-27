@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	screenWidth  = 300
-	screenHeight = 200
+	screenWidth  = 600
+	screenHeight = 400
 )
 
 var canChangeFullscreen = true
@@ -46,7 +46,7 @@ func init() {
 }
 
 func main() {
-	if err := ebiten.Run(update, screenWidth, screenHeight, 3, "Game Title"); err != nil {
+	if err := ebiten.Run(update, screenWidth, screenHeight, 2, "Game Title"); err != nil {
 		log.Fatal(err)
 	}
 }
