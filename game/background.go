@@ -32,7 +32,7 @@ type background struct {
 	// cloudY    float64
 }
 
-func NewBackground() *background {
+func newBackground() *background {
 	b := &background{
 		skycolor1: color.NRGBA{255, 140, 68, 255},
 		skyclor1:  color.NRGBA{0, 0, 10, 255},
@@ -101,7 +101,7 @@ func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
 	gap := 50
 
 	opts := ebiten.DrawImageOptions{}
-	// Round to nearest mutliple of gap becuase we need the x values to be consistent.
+	// Round to nearest multiple of gap because we need the x values to be consistent.
 	left := float64(((int(area.Left()) + gap/2) / gap) * gap)
 	right := float64(((int(area.Right()) + gap/2) / gap) * gap)
 	for x := left; x < right; x += float64(gap) {

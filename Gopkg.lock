@@ -35,19 +35,19 @@
   branch = "master"
   name = "github.com/hajimehoshi/ebiten"
   packages = [".","ebitenutil","ebitenutil/internal/assets","internal","internal/affine","internal/clock","internal/endian","internal/graphics","internal/jni","internal/math","internal/opengl","internal/restorable","internal/sync","internal/ui","internal/web"]
-  revision = "b05455a2a69c8a83201901eb383b9d631330ba94"
+  revision = "6c10251a45d4ea01da9b1d8f89abd06a014c01ab"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/mobile"
   packages = ["gl"]
-  revision = "b2ece8c621624eb86f0532b8f37686e0ea95c3c2"
+  revision = "05f1abc543eeb2d5459b390011389bb8ed93eaf0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["windows"]
-  revision = "07c182904dbd53199946ba614a412c61d3c548f5"
+  revision = "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15"
 
 [solve-meta]
   analyzer-name = "dep"
