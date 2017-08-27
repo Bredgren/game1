@@ -48,9 +48,12 @@ func New(screenWidth, screenHeight int) *Game {
 	p := newPlayer()
 
 	cam := camera.New(screenWidth, screenHeight)
-	cam.MaxDist = 100
+	// cam.MaxDist = 100
+	// cam.MaxSpeed = 600
+	// cam.Ease = geo.EaseOutExpo
+	cam.MaxDist = 80
 	cam.MaxSpeed = 600
-	cam.Ease = geo.EaseOutQuad
+	cam.Ease = geo.EaseInExpo
 	cam.Target = p
 
 	cam.Shaker.Amplitude = 30
@@ -72,9 +75,9 @@ func New(screenWidth, screenHeight int) *Game {
 
 	g.actions = keymap.ActionMap{
 		ActionHandlerMap: keymap.ActionHandlerMap{
-			"move left":  g.handelPlayerMoveLeft,
-			"move right": g.handelPlayerMoveRight,
-			// "jump":       nil,
+			"move left":  g.handlePlayerMoveLeft,
+			"move right": g.handlePlayerMoveRight,
+			"jump":       g.handlePlayerJump,
 			// "uppercut":   nil,
 			// "slam":       nil,
 			// "punch":      nil,
@@ -110,7 +113,13 @@ func (g *Game) Update() {
 	// 	g.camera.StartShake()
 	// }
 
+	onGround := g.player.canJump
 	g.player.update(dt)
+
+	// player just contacted the ground
+	if !onGround && g.player.canJump {
+		g.camera.StartShake()
+	}
 
 	g.camera.Update(dt)
 
@@ -154,6 +163,10 @@ func (g *Game) dt(now time.Time) time.Duration {
 	if dt > maxDt {
 		dt = maxDt
 	}
+	// Don't want negative dt somehow
+	if dt < 0 {
+		dt = 0
+	}
 	return dt
 }
 
@@ -169,17 +182,22 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 	ebitenutil.DebugPrint(dst, strings.Join(info, "\n"))
 }
 
-func (g *Game) handelPlayerMoveLeft(down bool) bool {
-	g.player.left = down
+func (g *Game) handlePlayerMoveLeft(down bool) bool {
+	g.player.Left = down
 	return false
 }
 
-func (g *Game) handelPlayerMoveRight(down bool) bool {
-	g.player.right = down
+func (g *Game) handlePlayerMoveRight(down bool) bool {
+	g.player.Right = down
 	return false
 }
 
 func (g *Game) handlePlayerMove(val float64) bool {
-	g.player.move = val
+	g.player.Move = val
+	return false
+}
+
+func (g *Game) handlePlayerJump(down bool) bool {
+	g.player.Jump = down
 	return false
 }
