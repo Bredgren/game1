@@ -36,12 +36,16 @@ type StoppedBtnSet map[button.Button]bool
 func (km KeyMap) Update(ahm ActionHandlerMap, stoppedBtns StoppedBtnSet) {
 	gamepadID := 0 // Assume one gamepad for now
 
+	// We need to OR together all "down" vaules for different buttons that map to the same
+	// action, otherwise they can cancel each other out.
+	actionValues := map[Action]bool{}
+
 	for btn, action := range km {
 		if stoppedBtns[btn] {
 			continue
 		}
 
-		if actionFn, ok := ahm[action]; ok {
+		if _, ok := ahm[action]; ok {
 			var down bool
 			if k, ok := btn.Key(); ok {
 				down = ebiten.IsKeyPressed(k)
@@ -50,7 +54,16 @@ func (km KeyMap) Update(ahm ActionHandlerMap, stoppedBtns StoppedBtnSet) {
 			} else if mb, ok := btn.MouseButton(); ok {
 				down = ebiten.IsMouseButtonPressed(mb)
 			}
-			stoppedBtns[btn] = actionFn(down)
+			actionValues[action] = down || actionValues[action]
+		}
+	}
+
+	for action, down := range actionValues {
+		res := ahm[action](down)
+		for btn, a := range km {
+			if a == action {
+				stoppedBtns[btn] = res
+			}
 		}
 	}
 }
