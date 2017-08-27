@@ -17,9 +17,9 @@ type player struct {
 	pos    geo.Vec
 	bounds geo.Rect
 	img    *ebiten.Image
-	left   bool
-	right  bool
-	move   float64
+	left   bool    // Move left button is down
+	right  bool    // Move right button is down
+	move   float64 // Gampad axis for movement
 }
 
 func newPlayer() *player {
@@ -33,7 +33,7 @@ func newPlayer() *player {
 }
 
 func (p *player) update(dt time.Duration) {
-	if p.move == 0 {
+	if p.move == 0 { // If gamepad axis isn't being used, check left/right buttons.
 		if p.left {
 			p.move = -1
 		}
@@ -41,8 +41,8 @@ func (p *player) update(dt time.Duration) {
 			p.move = 1
 		}
 	}
+
 	p.pos.Add(geo.VecXY(p.move, 0).Times(playerMoveSpeed * dt.Seconds()))
-	p.move = 0
 	p.bounds.SetBottomMid(p.pos.XY())
 }
 

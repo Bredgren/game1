@@ -180,9 +180,6 @@ func (g *Game) handelPlayerMoveRight(down bool) bool {
 }
 
 func (g *Game) handlePlayerMove(val float64) bool {
-	if val != 0 {
-		g.player.move = val
-
-	}
+	g.player.move = val
 	return false
 }
