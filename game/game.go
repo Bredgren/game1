@@ -40,7 +40,8 @@ type Game struct {
 	lastDrawTime   time.Duration
 	lastTimeSample time.Time
 
-	player *player
+	player   *player
+	playerCT *playerCameraTarget
 }
 
 // New creates, initializes, and returns a new Game.
@@ -51,10 +52,10 @@ func New(screenWidth, screenHeight int) *Game {
 	// cam.MaxDist = 100
 	// cam.MaxSpeed = 600
 	// cam.Ease = geo.EaseOutExpo
-	cam.MaxDist = 80
-	cam.MaxSpeed = 600
-	cam.Ease = geo.EaseInExpo
-	cam.Target = p
+	//
+	// cam.MaxDist = 80
+	// cam.MaxSpeed = 600
+	// cam.Ease = geo.EaseInExpo
 
 	cam.Shaker.Amplitude = 30
 	cam.Shaker.Duration = 1 * time.Second
@@ -72,6 +73,9 @@ func New(screenWidth, screenHeight int) *Game {
 
 		player: p,
 	}
+
+	g.playerCT = newPlayerCameraTarget(g, p, screenHeight)
+	cam.Target = g.playerCT
 
 	g.actions = keymap.ActionMap{
 		ActionHandlerMap: keymap.ActionHandlerMap{
@@ -120,6 +124,8 @@ func (g *Game) Update() {
 	if !onGround && g.player.canJump {
 		g.camera.StartShake()
 	}
+
+	g.playerCT.update(dt)
 
 	g.camera.Update(dt)
 
