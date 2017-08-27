@@ -17,7 +17,7 @@ var canChangeFullscreen = true
 var theGame *game.Game
 
 func togglFullscreen() {
-	if ebiten.IsKeyPressed(ebiten.KeyF) {
+	if ebiten.IsKeyPressed(ebiten.KeyF11) {
 		if canChangeFullscreen {
 			ebiten.SetFullscreen(!ebiten.IsFullscreen())
 			canChangeFullscreen = false
