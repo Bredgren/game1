@@ -22,17 +22,17 @@ func FromMouseButton(mb ebiten.MouseButton) Button {
 
 // IsKey returns true if the Button is an ebiten.Key.
 func (b Button) IsKey() bool {
-	return int(b) <= int(ebiten.KeyMax)
+	return int(b) < int(ebiten.KeyMax)
 }
 
 // IsGamepadButton returns true if the Button is an ebiten.GamepadButton.
 func (b Button) IsGamepadButton() bool {
-	return int(ebiten.KeyMax) < int(b) && int(b) <= int(ebiten.KeyMax)+int(ebiten.GamepadButtonMax)
+	return int(ebiten.KeyMax) <= int(b) && int(b) < int(ebiten.KeyMax)+int(ebiten.GamepadButtonMax)
 }
 
 // IsMouseButton returns true if the Button is an ebiten.GamepadButton.
 func (b Button) IsMouseButton() bool {
-	return int(ebiten.KeyMax)+int(ebiten.GamepadButtonMax) < int(b)
+	return int(ebiten.KeyMax)+int(ebiten.GamepadButtonMax) <= int(b)
 }
 
 // Key converts Button to ebiten.Key. The return value ok is false if it is actually a
@@ -44,11 +44,11 @@ func (b Button) Key() (k ebiten.Key, ok bool) {
 // GamepadButton converts Button to ebiten.GamepadButton. The return value ok is false
 // if it is actually a Key or MouseButton.
 func (b Button) GamepadButton() (gb ebiten.GamepadButton, ok bool) {
-	return ebiten.GamepadButton(b), b.IsGamepadButton()
+	return ebiten.GamepadButton(int(b) - int(ebiten.KeyMax)), b.IsGamepadButton()
 }
 
 // MouseButton converts Button to ebiten.MouseButton. The return value ok is false if it
 // is actually a Key or GamepadButton.
 func (b Button) MouseButton() (mb ebiten.MouseButton, ok bool) {
-	return ebiten.MouseButton(b), b.IsMouseButton()
+	return ebiten.MouseButton(int(b) - int(ebiten.KeyMax) - int(ebiten.GamepadButtonMax)), b.IsMouseButton()
 }
