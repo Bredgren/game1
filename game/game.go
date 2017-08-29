@@ -83,12 +83,14 @@ func New(screenWidth, screenHeight int) *Game {
 	g.playerCT = newPlayerCameraTarget(g, p, screenHeight)
 	cam.Target = g.playerCT
 
+	const ignore = "ignore"
+
 	g.actions = keymap.ActionMap{
 		ActionHandlerMap: keymap.ActionHandlerMap{
-			"ignore": func(_ bool) bool { return g.inputDisabled },
-			"left":   g.handlePlayerMoveLeft,
-			"right":  g.handlePlayerMoveRight,
-			"jump":   g.handlePlayerJump,
+			ignore:  func(_ bool) bool { return g.inputDisabled },
+			"left":  g.handlePlayerMoveLeft,
+			"right": g.handlePlayerMoveRight,
+			"jump":  g.handlePlayerJump,
 			// "uppercut":   nil,
 			// "slam":       nil,
 			// "punch":      nil,
@@ -130,17 +132,17 @@ func New(screenWidth, screenHeight int) *Game {
 	// This keymap layer is for disabling all input
 	disableKeyMap := keymap.NewMap()
 	for i := ebiten.Key0; i < ebiten.KeyMax; i++ {
-		disableKeyMap.KeyMap[button.FromKey(i)] = "ignore"
+		disableKeyMap.KeyMap[button.FromKey(i)] = ignore
 	}
 	for i := ebiten.GamepadButton0; i < ebiten.GamepadButtonMax; i++ {
-		disableKeyMap.KeyMap[button.FromGamepadButton(i)] = "ignore"
+		disableKeyMap.KeyMap[button.FromGamepadButton(i)] = ignore
 	}
-	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonLeft)] = "ignore"
-	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonMiddle)] = "ignore"
-	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonRight)] = "ignore"
+	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonLeft)] = ignore
+	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonMiddle)] = ignore
+	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonRight)] = ignore
 	// We don't know how many axes there will be so just do alot :P
 	for i := 0; i < 100; i++ {
-		disableKeyMap.AxisMap[i] = "ignore"
+		disableKeyMap.AxisMap[i] = ignore
 	}
 
 	g.keyLayers = append(g.keyLayers, fixedKeyMap)
