@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"time"
 
 	"github.com/Bredgren/geo"
@@ -27,7 +28,9 @@ func (ct *playerCameraTarget) update(dt time.Duration) {
 	case mainMenuState:
 		ct.pos.Y = ct.offset.Y
 	case playState:
-		ct.pos = ct.p.Pos().Plus(ct.offset)
+		offset := ct.offset
+		offset.Y = -math.Max(0, ct.p.Pos().Y-offset.Y)
+		ct.pos = ct.p.Pos().Plus(offset)
 	}
 }
 
