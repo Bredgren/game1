@@ -3,30 +3,39 @@ package game
 import (
 	"image/color"
 
+	"golang.org/x/image/font"
+
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/keymap/button"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/text"
-	"golang.org/x/image/font"
 )
 
 type keyLabel struct {
-	pos    geo.Vec
+	name   string
+	bounds geo.Rect
 	img    map[bool]*ebiten.Image
 	active bool
 }
 
-func newKeyLabel(pos geo.Vec, name string, face font.Face) *keyLabel {
-	img1, _ := ebiten.NewImage(30, 10, ebiten.FilterNearest)
-	img1.Fill(color.White)
-	text.Draw(img1, name, face, 0, 10, color.Black)
-	img2, _ := ebiten.NewImage(30, 10, ebiten.FilterNearest)
-	img2.Fill(color.Black)
-	text.Draw(img2, name, face, 0, 10, color.White)
+func newKeyLabel(name string, face font.Face) *keyLabel {
+	bounds, _ := font.BoundString(face, name)
+	width := (bounds.Max.X - bounds.Min.X).Ceil() + 4
+	height := (bounds.Max.Y - bounds.Min.Y).Ceil()
+	offset := (face.Metrics().Height - face.Metrics().Descent).Floor() - 1
+
+	img1, _ := ebiten.NewImage(width, height, ebiten.FilterNearest)
+	img1.Fill(color.RGBA{0, 0, 0, 50})
+	text.Draw(img1, name, face, 2, offset, color.Black)
+
+	img2, _ := ebiten.NewImage(width, height, ebiten.FilterNearest)
+	img2.Fill(color.RGBA{0, 0, 0, 150})
+	text.Draw(img2, name, face, 2, offset, color.White)
 
 	k := &keyLabel{
-		pos: pos,
+		name:   name,
+		bounds: geo.RectWH(geo.I2F2(width, height)),
 		img: map[bool]*ebiten.Image{
 			false: img1,
 			true:  img2,
@@ -38,7 +47,7 @@ func newKeyLabel(pos geo.Vec, name string, face font.Face) *keyLabel {
 
 func (k *keyLabel) draw(dst *ebiten.Image, cam *camera.Camera) {
 	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(k.pos.XY())
+	opts.GeoM.Translate(k.bounds.TopLeft())
 	dst.DrawImage(k.img[k.active], &opts)
 }
 

@@ -20,6 +20,16 @@ const (
 	frameTime = (time.Second / time.Nanosecond) / ebiten.FPS * time.Nanosecond
 )
 
+const (
+	ignore     = "ignore"
+	left       = "left"
+	right      = "right"
+	move       = "move"
+	jump       = "jump"
+	fullscreen = "fullscreen"
+	pause      = "pause"
+)
+
 type gameState int
 
 const (
@@ -70,6 +80,20 @@ func New(screenWidth, screenHeight int) *Game {
 	cam.Shaker.Frequency = 10
 	cam.Shaker.Falloff = geo.EaseOutQuad
 
+	keyOptionsPos := geo.VecXY(100, 100)
+	keyOptionVGap := 2.0
+	keyLabels := []*keyLabel{
+		newKeyLabel(left, basicfont.Face7x13),
+		newKeyLabel(right, basicfont.Face7x13),
+		newKeyLabel(move, basicfont.Face7x13),
+		newKeyLabel(jump, basicfont.Face7x13),
+	}
+
+	for _, kl := range keyLabels {
+		kl.bounds.SetTopLeft(keyOptionsPos.XY())
+		keyOptionsPos.Y += kl.bounds.H + keyOptionVGap
+	}
+
 	g := &Game{
 		state:         mainMenuState,
 		showDebugInfo: true,
@@ -77,33 +101,31 @@ func New(screenWidth, screenHeight int) *Game {
 		camera:        cam,
 		background:    newBackground(),
 
-		keyLabels: map[string]*keyLabel{
-			"left":  newKeyLabel(geo.VecXY(100, 100), "left", basicfont.Face7x13),
-			"right": newKeyLabel(geo.VecXY(100, 115), "right", basicfont.Face7x13),
-			"jump":  newKeyLabel(geo.VecXY(100, 130), "jump", basicfont.Face7x13),
-		},
+		keyLabels: map[string]*keyLabel{},
 
 		keyLayers: keymap.Layers{},
 
 		player: p,
 	}
 
+	for _, kl := range keyLabels {
+		g.keyLabels[kl.name] = kl
+	}
+
 	g.playerCT = newPlayerCameraTarget(g, p, screenHeight)
 	cam.Target = g.playerCT
 
-	const ignore = "ignore"
-
 	g.actions = keymap.ActionMap{
 		ActionHandlerMap: keymap.ActionHandlerMap{
-			ignore:  func(_ bool) bool { return g.inputDisabled },
-			"left":  g.handlePlayerMoveLeft,
-			"right": g.handlePlayerMoveRight,
-			"jump":  g.handlePlayerJump,
+			ignore: func(_ bool) bool { return g.inputDisabled },
+			left:   g.handlePlayerMoveLeft,
+			right:  g.handlePlayerMoveRight,
+			jump:   g.handlePlayerJump,
 			// "uppercut":   nil,
 			// "slam":       nil,
 			// "punch":      nil,
 			// "launch":     nil,
-			"fullscreen": func(down bool) bool {
+			fullscreen: func(down bool) bool {
 				if down && g.canToggleFullscreen {
 					ebiten.SetFullscreen(!ebiten.IsFullscreen())
 					g.canToggleFullscreen = false
@@ -112,7 +134,7 @@ func New(screenWidth, screenHeight int) *Game {
 				}
 				return false
 			},
-			"pause": func(down bool) bool {
+			pause: func(down bool) bool {
 				if down {
 					log.Println("pause not implement yet")
 				}
@@ -120,8 +142,8 @@ func New(screenWidth, screenHeight int) *Game {
 			},
 		},
 		AxisActionHandlerMap: keymap.AxisActionHandlerMap{
-			"ignore": func(_ float64) bool { return g.inputDisabled },
-			"move":   g.handlePlayerMove,
+			ignore: func(_ float64) bool { return g.inputDisabled },
+			move:   g.handlePlayerMove,
 			// "punch horizontal": nil,
 			// "punch vertical":   nil,
 		},
@@ -132,10 +154,10 @@ func New(screenWidth, screenHeight int) *Game {
 
 	// Keys that can't be remapped
 	fixedKeyMap := keymap.NewMap()
-	fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyEscape)] = "pause"
-	fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyF11)] = "fullscreen"
-	fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton7)] = "pause"
-	fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton6)] = "fullscreen"
+	fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyEscape)] = pause
+	fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyF11)] = fullscreen
+	fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton7)] = pause
+	fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton6)] = fullscreen
 
 	// This keymap layer is for disabling all input
 	disableKeyMap := keymap.NewMap()
@@ -249,23 +271,24 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 
 func (g *Game) handlePlayerMoveLeft(down bool) bool {
 	g.player.Left = down
-	g.keyLabels["left"].active = down
+	g.keyLabels[left].active = down
 	return false
 }
 
 func (g *Game) handlePlayerMoveRight(down bool) bool {
 	g.player.Right = down
-	g.keyLabels["right"].active = down
+	g.keyLabels[right].active = down
 	return false
 }
 
 func (g *Game) handlePlayerMove(val float64) bool {
 	g.player.Move = val
+	g.keyLabels[move].active = val != 0
 	return false
 }
 
 func (g *Game) handlePlayerJump(down bool) bool {
 	g.player.Jump = down
-	g.keyLabels["jump"].active = down
+	g.keyLabels[jump].active = down
 	return false
 }
