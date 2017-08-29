@@ -36,8 +36,6 @@ type Game struct {
 	inputDisabled       bool
 	canToggleFullscreen bool
 
-	mainMenu *mainMenu
-
 	actions   keymap.ActionMap
 	keyLayers keymap.Layers
 
@@ -160,7 +158,6 @@ func (g *Game) Update() {
 	g.keyLayers.Update(g.actions)
 
 	if g.state == mainMenuState {
-		g.mainMenu.update(dt)
 	}
 
 	onGround := g.player.canJump
@@ -193,7 +190,6 @@ func (g *Game) Draw(dst *ebiten.Image) {
 	g.player.draw(dst, g.camera)
 
 	if g.state == mainMenuState {
-		g.mainMenu.draw(dst)
 	}
 
 	if g.showDebugInfo {
