@@ -27,13 +27,14 @@ const (
 
 // Game manages the overall state of the game.
 type Game struct {
-	state         gameState
-	showDebugInfo bool
-	timeScale     float64
-	lastUpdate    time.Time
-	camera        *camera.Camera
-	background    *background
-	inputDisabled bool
+	state               gameState
+	showDebugInfo       bool
+	timeScale           float64
+	lastUpdate          time.Time
+	camera              *camera.Camera
+	background          *background
+	inputDisabled       bool
+	canToggleFullscreen bool
 
 	mainMenu *mainMenu
 
@@ -92,9 +93,18 @@ func New(screenWidth, screenHeight int) *Game {
 			// "slam":       nil,
 			// "punch":      nil,
 			// "launch":     nil,
+			"fullscreen": func(down bool) bool {
+				if down && g.canToggleFullscreen {
+					ebiten.SetFullscreen(!ebiten.IsFullscreen())
+					g.canToggleFullscreen = false
+				} else if !down {
+					g.canToggleFullscreen = true
+				}
+				return false
+			},
 			"pause": func(down bool) bool {
 				if down {
-					log.Println("pause")
+					log.Println("pause not implement yet")
 				}
 				return false
 			},
