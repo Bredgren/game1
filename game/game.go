@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/image/font/basicfont"
+
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/keymap"
 	"github.com/Bredgren/game1/game/keymap/button"
@@ -35,6 +37,8 @@ type Game struct {
 	background          *background
 	inputDisabled       bool
 	canToggleFullscreen bool
+
+	keyLabels map[string]*keyLabel
 
 	actions   keymap.ActionMap
 	keyLayers keymap.Layers
@@ -72,6 +76,12 @@ func New(screenWidth, screenHeight int) *Game {
 		timeScale:     1.0,
 		camera:        cam,
 		background:    newBackground(),
+
+		keyLabels: map[string]*keyLabel{
+			"left":  newKeyLabel(geo.VecXY(100, 100), "left", basicfont.Face7x13),
+			"right": newKeyLabel(geo.VecXY(100, 115), "right", basicfont.Face7x13),
+			"jump":  newKeyLabel(geo.VecXY(100, 130), "jump", basicfont.Face7x13),
+		},
 
 		keyLayers: keymap.Layers{},
 
@@ -190,6 +200,9 @@ func (g *Game) Draw(dst *ebiten.Image) {
 	g.player.draw(dst, g.camera)
 
 	if g.state == mainMenuState {
+		for _, kl := range g.keyLabels {
+			kl.draw(dst, g.camera)
+		}
 	}
 
 	if g.showDebugInfo {
@@ -236,11 +249,13 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 
 func (g *Game) handlePlayerMoveLeft(down bool) bool {
 	g.player.Left = down
+	g.keyLabels["left"].active = down
 	return false
 }
 
 func (g *Game) handlePlayerMoveRight(down bool) bool {
 	g.player.Right = down
+	g.keyLabels["right"].active = down
 	return false
 }
 
@@ -251,5 +266,6 @@ func (g *Game) handlePlayerMove(val float64) bool {
 
 func (g *Game) handlePlayerJump(down bool) bool {
 	g.player.Jump = down
+	g.keyLabels["jump"].active = down
 	return false
 }
