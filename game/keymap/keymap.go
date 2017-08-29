@@ -79,9 +79,10 @@ type StoppedAxisSet map[int]bool
 // the return values of the handlers that are executed.
 func (am AxisMap) Update(ahm AxisActionHandlerMap, stoppedAxis StoppedAxisSet) {
 	gamepadID := 0 // Assume one gamepad for now
+	numAxis := ebiten.GamepadAxisNum(0)
 
 	for axis, action := range am {
-		if stoppedAxis[axis] {
+		if stoppedAxis[axis] || axis > numAxis {
 			continue
 		}
 

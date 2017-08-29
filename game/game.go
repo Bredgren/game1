@@ -2,11 +2,13 @@ package game
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/keymap"
+	"github.com/Bredgren/game1/game/keymap/button"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
@@ -31,17 +33,20 @@ type Game struct {
 	lastUpdate    time.Time
 	camera        *camera.Camera
 	background    *background
+	inputDisabled bool
+
+	mainMenu *mainMenu
 
 	actions   keymap.ActionMap
 	keyLayers keymap.Layers
+
+	player   *player
+	playerCT *playerCameraTarget
 
 	// Fields only for debugging
 	lastUpdateTime time.Duration
 	lastDrawTime   time.Duration
 	lastTimeSample time.Time
-
-	player   *player
-	playerCT *playerCameraTarget
 }
 
 // New creates, initializes, and returns a new Game.
@@ -79,17 +84,24 @@ func New(screenWidth, screenHeight int) *Game {
 
 	g.actions = keymap.ActionMap{
 		ActionHandlerMap: keymap.ActionHandlerMap{
-			"move left":  g.handlePlayerMoveLeft,
-			"move right": g.handlePlayerMoveRight,
-			"jump":       g.handlePlayerJump,
+			"ignore": func(_ bool) bool { return g.inputDisabled },
+			"left":   g.handlePlayerMoveLeft,
+			"right":  g.handlePlayerMoveRight,
+			"jump":   g.handlePlayerJump,
 			// "uppercut":   nil,
 			// "slam":       nil,
 			// "punch":      nil,
 			// "launch":     nil,
-			// "pause":      nil,
+			"pause": func(down bool) bool {
+				if down {
+					log.Println("pause")
+				}
+				return false
+			},
 		},
 		AxisActionHandlerMap: keymap.AxisActionHandlerMap{
-			"move": g.handlePlayerMove,
+			"ignore": func(_ float64) bool { return g.inputDisabled },
+			"move":   g.handlePlayerMove,
 			// "punch horizontal": nil,
 			// "punch vertical":   nil,
 		},
@@ -98,6 +110,31 @@ func New(screenWidth, screenHeight int) *Game {
 	keyMap := keymap.NewMap()
 	setDefaultKeyMap(keyMap)
 
+	// Keys that can't be remapped
+	fixedKeyMap := keymap.NewMap()
+	fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyEscape)] = "pause"
+	fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyF11)] = "fullscreen"
+	fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton7)] = "pause"
+	fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton6)] = "fullscreen"
+
+	// This keymap layer is for disabling all input
+	disableKeyMap := keymap.NewMap()
+	for i := ebiten.Key0; i < ebiten.KeyMax; i++ {
+		disableKeyMap.KeyMap[button.FromKey(i)] = "ignore"
+	}
+	for i := ebiten.GamepadButton0; i < ebiten.GamepadButtonMax; i++ {
+		disableKeyMap.KeyMap[button.FromGamepadButton(i)] = "ignore"
+	}
+	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonLeft)] = "ignore"
+	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonMiddle)] = "ignore"
+	disableKeyMap.KeyMap[button.FromMouseButton(ebiten.MouseButtonRight)] = "ignore"
+	// We don't know how many axes there will be so just do alot :P
+	for i := 0; i < 100; i++ {
+		disableKeyMap.AxisMap[i] = "ignore"
+	}
+
+	g.keyLayers = append(g.keyLayers, fixedKeyMap)
+	g.keyLayers = append(g.keyLayers, disableKeyMap)
 	g.keyLayers = append(g.keyLayers, keyMap)
 
 	return g
@@ -110,12 +147,9 @@ func (g *Game) Update() {
 
 	g.keyLayers.Update(g.actions)
 
-	// if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-	// 	g.player.pos = g.camera.WorldCoords(geo.VecXYi(ebiten.CursorPosition()))
-	// }
-	// if ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight) {
-	// 	g.camera.StartShake()
-	// }
+	if g.state == mainMenuState {
+		g.mainMenu.update(dt)
+	}
 
 	onGround := g.player.canJump
 	g.player.update(dt)
@@ -145,6 +179,10 @@ func (g *Game) Draw(dst *ebiten.Image) {
 	g.background.Draw(dst, g.camera)
 
 	g.player.draw(dst, g.camera)
+
+	if g.state == mainMenuState {
+		g.mainMenu.draw(dst)
+	}
 
 	if g.showDebugInfo {
 		drawTime := time.Since(drawStart)

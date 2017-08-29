@@ -31,8 +31,8 @@ import (
 
 var defaultPlayKeyMap = keymap.Map{
 	KeyMap: keymap.KeyMap{
-		button.FromKey(ebiten.KeyA):                     "move left",
-		button.FromKey(ebiten.KeyD):                     "move right",
+		button.FromKey(ebiten.KeyA):                     "left",
+		button.FromKey(ebiten.KeyD):                     "right",
 		button.FromKey(ebiten.KeySpace):                 "jump",
 		button.FromKey(ebiten.KeyW):                     "uppercut",
 		button.FromKey(ebiten.KeyS):                     "slam",
