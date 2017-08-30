@@ -97,3 +97,8 @@ func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 func (p *player) Pos() geo.Vec {
 	return p.pos
 }
+
+func (p *player) SetPos(pos geo.Vec) {
+	p.pos = pos
+	p.bounds.SetBottomMid(p.pos.XY())
+}
