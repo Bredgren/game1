@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/Bredgren/game1/game/camera"
+	"github.com/Bredgren/game1/game/keymap"
+	"github.com/Bredgren/game1/game/keymap/button"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
@@ -26,6 +28,14 @@ const (
 	pause      = "pause"
 )
 
+const (
+	generalLayer = iota
+	remapLayer
+	uiLayer
+	playerLayer
+	numInputLayers
+)
+
 // Game manages the overall state of the game.
 type Game struct {
 	state         gameStateName
@@ -41,10 +51,9 @@ type Game struct {
 	// keyLabels map[string]*keyLabel
 
 	// actions   keymap.ActionMap
-	// keyLayers keymap.Layers
+	keymap keymap.Layers
 
 	player *player
-	// playerCT *playerCameraTarget
 
 	// Fields only for debugging
 	lastUpdateTime time.Duration
@@ -99,17 +108,38 @@ func New(screenWidth, screenHeight int) *Game {
 
 		// keyLabels: map[string]*keyLabel{},
 
-		// keyLayers: keymap.Layers{},
+		keymap: make(keymap.Layers, numInputLayers),
 
 		player: p,
 	}
 
+	generalActions := keymap.ButtonHandlerMap{
+		pause: func(down bool) bool {
+			if down {
+				log.Println("pause not implement yet")
+			}
+			return false
+		},
+		fullscreen: func(down bool) bool {
+			if down && g.canToggleFullscreen {
+				ebiten.SetFullscreen(!ebiten.IsFullscreen())
+				g.canToggleFullscreen = false
+			} else if !down {
+				g.canToggleFullscreen = true
+			}
+			return false
+		},
+	}
+	g.keymap[generalLayer] = keymap.New(generalActions, nil)
+
+	g.keymap[generalLayer].KeyMouse.Set(button.FromKey(ebiten.KeyEscape), pause)
+	g.keymap[generalLayer].KeyMouse.Set(button.FromKey(ebiten.KeyF11), fullscreen)
+	g.keymap[generalLayer].GamepadBtn.Set(ebiten.GamepadButton7, pause)
+	g.keymap[generalLayer].GamepadBtn.Set(ebiten.GamepadButton6, fullscreen)
+
 	// for _, kl := range keyLabels {
 	// 	g.keyLabels[kl.name] = kl
 	// }
-
-	// g.playerCT = newPlayerCameraTarget(g, p, screenHeight)
-	// cam.Target = g.playerCT
 
 	// g.actions = keymap.ActionMap{
 	// 	ActionHandlerMap: keymap.ActionHandlerMap{
@@ -183,7 +213,7 @@ func (g *Game) Update() {
 	updateStart := time.Now()
 	dt := g.dt(updateStart)
 
-	// g.keyLayers.Update(g.actions)
+	g.keymap.Update()
 
 	// onGround := g.player.canJump
 	// g.player.update(dt)
@@ -192,8 +222,6 @@ func (g *Game) Update() {
 	// if !onGround && g.player.canJump {
 	// 	g.camera.StartShake()
 	// }
-	//
-	// g.playerCT.update(dt)
 
 	s := g.states[g.state]
 	next := s.nextState()
@@ -222,8 +250,6 @@ func (g *Game) Update() {
 func (g *Game) Draw(dst *ebiten.Image) {
 	drawStart := time.Now()
 
-	// g.background.Draw(dst, g.camera)
-	//
 	// g.player.draw(dst, g.camera)
 	//
 	// if g.state == mainMenu {

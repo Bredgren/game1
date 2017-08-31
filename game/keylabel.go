@@ -52,7 +52,7 @@ func (k *keyLabel) draw(dst *ebiten.Image, cam *camera.Camera) {
 }
 
 type keyButton struct {
-	btn button.Button
+	btn button.KeyMouse
 }
 
 type axisButton struct {
