@@ -60,6 +60,9 @@ func (l Layers) Update() {
 	stoppedBtns := map[ebiten.GamepadButton]bool{}
 	stoppedAxes := map[int]bool{}
 	for _, keymap := range l {
+		if keymap == nil {
+			continue
+		}
 		actions := map[Action]bool{}
 
 		for _, btn := range keymap.KeyMouse.Buttons() {
