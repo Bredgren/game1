@@ -29,7 +29,7 @@ func (gm *GamepadAxisMap) Set(ax int, a Action) {
 	gm.actToaxis[a] = ax
 }
 
-// GetButton returns the axis associated with the action.
+// GetAxis returns the axis associated with the action.
 func (gm *GamepadAxisMap) GetAxis(a Action) (ax int, ok bool) {
 	ax, ok = gm.actToaxis[a]
 	return
@@ -41,7 +41,7 @@ func (gm *GamepadAxisMap) GetAction(b int) (a Action, ok bool) {
 	return
 }
 
-// DelButton removes the axis and its associated action.
+// DelAxis removes the axis and its associated action.
 func (gm *GamepadAxisMap) DelAxis(ax int) {
 	if a, ok := gm.axisToAct[ax]; ok {
 		delete(gm.axisToAct, ax)
@@ -57,7 +57,7 @@ func (gm *GamepadAxisMap) DelAction(a Action) {
 	}
 }
 
-// Buttons returns a slice containing all axes currently in the map.
+// Axes returns a slice containing all axes currently in the map.
 func (gm *GamepadAxisMap) Axes() []int {
 	s := make([]int, 0, len(gm.axisToAct))
 	for ax := range gm.axisToAct {
