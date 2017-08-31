@@ -142,6 +142,7 @@ func New(screenWidth, screenHeight int) *Game {
 	playerActions := keymap.ButtonHandlerMap{
 		left:  p.handleLeft,
 		right: p.handleRight,
+		jump:  p.handleJump,
 	}
 	playerAxisActions := keymap.AxisHandlerMap{
 		move: p.handleMove,
@@ -158,43 +159,6 @@ func New(screenWidth, screenHeight int) *Game {
 	// 	g.keyLabels[kl.name] = kl
 	// }
 
-	// g.actions = keymap.ActionMap{
-	// 	ActionHandlerMap: keymap.ActionHandlerMap{
-	// 		ignore: func(_ bool) bool { return g.inputDisabled },
-	// 		left:   g.handlePlayerMoveLeft,
-	// 		right:  g.handlePlayerMoveRight,
-	// 		jump:   g.handlePlayerJump,
-	// 		// "uppercut":   nil,
-	// 		// "slam":       nil,
-	// 		// "punch":      nil,
-	// 		// "launch":     nil,
-	// 		fullscreen: func(down bool) bool {
-	// 			if down && g.canToggleFullscreen {
-	// 				ebiten.SetFullscreen(!ebiten.IsFullscreen())
-	// 				g.canToggleFullscreen = false
-	// 			} else if !down {
-	// 				g.canToggleFullscreen = true
-	// 			}
-	// 			return false
-	// 		},
-	// 		pause: func(down bool) bool {
-	// 			if down {
-	// 				log.Println("pause not implement yet")
-	// 			}
-	// 			return false
-	// 		},
-	// 	},
-	// 	AxisActionHandlerMap: keymap.AxisActionHandlerMap{
-	// 		ignore: func(_ float64) bool { return g.inputDisabled },
-	// 		move:   g.handlePlayerMove,
-	// 		// "punch horizontal": nil,
-	// 		// "punch vertical":   nil,
-	// 	},
-	// }
-
-	// keyMap := keymap.NewMap()
-	// setDefaultKeyMap(keyMap)
-
 	// // This keymap layer is for disabling all input
 	// disableKeyMap := keymap.NewMap()
 	// for i := ebiten.Key0; i < ebiten.KeyMax; i++ {
@@ -210,10 +174,6 @@ func New(screenWidth, screenHeight int) *Game {
 	// for i := 0; i < 100; i++ {
 	// 	disableKeyMap.AxisMap[i] = ignore
 	// }
-	//
-	// g.keyLayers = append(g.keyLayers, fixedKeyMap)
-	// g.keyLayers = append(g.keyLayers, disableKeyMap)
-	// g.keyLayers = append(g.keyLayers, keyMap)
 
 	return g
 }
@@ -224,14 +184,6 @@ func (g *Game) Update() {
 	dt := g.dt(updateStart)
 
 	g.keymap.Update()
-
-	// onGround := g.player.canJump
-	// g.player.update(dt)
-	//
-	// // player just contacted the ground
-	// if !onGround && g.player.canJump {
-	// 	g.camera.StartShake()
-	// }
 
 	s := g.states[g.state]
 	next := s.nextState()
@@ -260,8 +212,6 @@ func (g *Game) Update() {
 func (g *Game) Draw(dst *ebiten.Image) {
 	drawStart := time.Now()
 
-	// g.player.draw(dst, g.camera)
-	//
 	// if g.state == mainMenu {
 	// 	for _, kl := range g.keyLabels {
 	// 		kl.draw(dst, g.camera)
@@ -311,9 +261,3 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 	}
 	ebitenutil.DebugPrint(dst, strings.Join(info, "\n"))
 }
-
-// func (g *Game) handlePlayerJump(down bool) bool {
-// 	g.player.Jump = down
-// 	g.keyLabels[jump].active = down
-// 	return false
-// }

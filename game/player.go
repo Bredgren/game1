@@ -119,3 +119,8 @@ func (p *player) handleMove(val float64) bool {
 	p.Move = val
 	return false
 }
+
+func (p *player) handleJump(down bool) bool {
+	p.Jump = down
+	return false
+}
