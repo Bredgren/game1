@@ -91,7 +91,11 @@ func (l Layers) Update() {
 		}
 
 		for action, down := range actions {
-			stop := keymap.btnHandlers[action](down)
+			fn, ok := keymap.btnHandlers[action]
+			if !ok {
+				continue
+			}
+			stop := fn(down)
 			if b, ok := keymap.KeyMouse.GetButton(action); ok {
 				stoppedKeys[b] = stop
 			}
@@ -107,7 +111,11 @@ func (l Layers) Update() {
 			}
 			val := ebiten.GamepadAxis(gamepadID, axis)
 			if act, ok := keymap.GamepadAxis.GetAction(axis); ok {
-				stop := keymap.gaHandlers[act](val)
+				fn, ok := keymap.gaHandlers[act]
+				if !ok {
+					continue
+				}
+				stop := fn(val)
 				stoppedAxes[axis] = stop
 			}
 		}
