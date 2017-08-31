@@ -8,6 +8,29 @@ import (
 // Action is a name/label for an action.
 type Action string
 
+// KeyMap groups all map types.
+type KeyMap struct {
+	KeyMouse    *KeyMouseMap
+	GamepadBtn  *GamepadBtnMap
+	GamepadAxis *GamepadAxisMap
+	btnHandlers ButtonHandlerMap
+	gaHandlers  AxisHandlerMap
+}
+
+// New creates and returns a new, empty KeyMap. The btnHandlers map shared between keyboard/mouse
+// and gamepad buttons. This means that if an action handler for a keyboard/mouse buttton
+// stops propagation then a gamepad button that maps to the same action in a later layer
+// will not be handled.
+func New(btnHandlers ButtonHandlerMap, gamepadAxisHandlers AxisHandlerMap) *KeyMap {
+	return &KeyMap{
+		KeyMouse:    NewKeyMouseMap(),
+		GamepadBtn:  NewGamepadBtnMap(),
+		GamepadAxis: NewGamepadAxisMap(),
+		btnHandlers: btnHandlers,
+		gaHandlers:  gamepadAxisHandlers,
+	}
+}
+
 // ButtonHandler is a function that handles a button state. The parameter down is true
 // if the button is pressed. It should return true if no later handlers should be called
 // for the same button.
@@ -18,112 +41,72 @@ type ButtonHandler func(down bool) (stopPropagation bool)
 // should be called for the same axis.
 type AxisHandler func(val float64) (stopPropagation bool)
 
-// ActionHandlerMap maps an Action to its handler.
-type ActionHandlerMap map[Action]ButtonHandler
+// ButtonHandlerMap maps button Actions to their handlers.
+type ButtonHandlerMap map[Action]ButtonHandler
 
-// AxisActionHandlerMap maps an Action to its axis handler.
-type AxisActionHandlerMap map[Action]AxisHandler
+// AxisHandlerMap maps axis Actions to their handlers.
+type AxisHandlerMap map[Action]AxisHandler
 
-// KeyMap maps a Button to an Action.
-type KeyMap map[button.Button]Action
+// Layers is a slice of KeyMaps. It enables buttons to be overloaded with multiple actions
+// with the option of skipping later handlers for buttons handled at earlier layers.
+type Layers []*KeyMap
 
-// StoppedBtnSet holds a set of Buttons that stopped propagation.
-type StoppedBtnSet map[button.Button]bool
+// Update checks input state and calls handlers for any actions triggered. It handles
+// each layer in order. If the handler for a button stops propagation then later following
+// layers will not handle any actions the same button triggers.
+func (l Layers) Update() {
+	const gamepadID = 0
+	stoppedKeys := map[button.KeyMouse]bool{}
+	stoppedBtns := map[ebiten.GamepadButton]bool{}
+	stoppedAxes := map[int]bool{}
+	for _, keymap := range l {
+		actions := map[Action]bool{}
 
-// Update calls the handler for all buttons that haven't been stopped. A button is stopped
-// if it maps to true in stoppedBtns. The stoppedBtns map is updated according to the
-// the return values of the handlers that are executed.
-func (km KeyMap) Update(ahm ActionHandlerMap, stoppedBtns StoppedBtnSet) {
-	gamepadID := 0 // Assume one gamepad for now
-
-	// We need to OR together all "down" vaules for different buttons that map to the same
-	// action, otherwise they can cancel each other out.
-	actionValues := map[Action]bool{}
-
-	for btn, action := range km {
-		if stoppedBtns[btn] {
-			continue
-		}
-
-		if _, ok := ahm[action]; ok {
+		for _, btn := range keymap.KeyMouse.Buttons() {
+			if stoppedKeys[btn] {
+				continue
+			}
 			var down bool
 			if k, ok := btn.Key(); ok {
 				down = ebiten.IsKeyPressed(k)
-			} else if gb, ok := btn.GamepadButton(); ok {
-				down = ebiten.IsGamepadButtonPressed(gamepadID, gb)
-			} else if mb, ok := btn.MouseButton(); ok {
+			} else if mb, ok := btn.Mouse(); ok {
 				down = ebiten.IsMouseButtonPressed(mb)
 			}
-			actionValues[action] = down || actionValues[action]
-		}
-	}
-
-	for action, down := range actionValues {
-		res := ahm[action](down)
-		for btn, a := range km {
-			if a == action {
-				stoppedBtns[btn] = res
+			if a, ok := keymap.KeyMouse.GetAction(btn); ok {
+				actions[a] = down || actions[a]
 			}
 		}
-	}
-}
 
-// AxisMap maps an axis id to an Action.
-type AxisMap map[int]Action
-
-// StoppedAxisSet holds a set of axis that stopped propagation.
-type StoppedAxisSet map[int]bool
-
-// Update calls the handler for all axes that haven't been stopped. An axis is stopped
-// if it maps to true in stoppedAxis. The stoppedAxis map is updated according to the
-// the return values of the handlers that are executed.
-func (am AxisMap) Update(ahm AxisActionHandlerMap, stoppedAxis StoppedAxisSet) {
-	gamepadID := 0 // Assume one gamepad for now
-	numAxis := ebiten.GamepadAxisNum(0)
-
-	for axis, action := range am {
-		if stoppedAxis[axis] || axis > numAxis {
-			continue
+		for _, btn := range keymap.GamepadBtn.Buttons() {
+			if stoppedBtns[btn] {
+				continue
+			}
+			down := ebiten.IsGamepadButtonPressed(gamepadID, btn)
+			if a, ok := keymap.GamepadBtn.GetAction(btn); ok {
+				actions[a] = down || actions[a]
+			}
 		}
 
-		if actionFn, ok := ahm[action]; ok {
-			stoppedAxis[axis] = actionFn(ebiten.GamepadAxis(gamepadID, axis))
+		for action, down := range actions {
+			stop := keymap.btnHandlers[action](down)
+			if b, ok := keymap.KeyMouse.GetButton(action); ok {
+				stoppedKeys[b] = stop
+			}
+			if b, ok := keymap.GamepadBtn.GetButton(action); ok {
+				stoppedBtns[b] = stop
+			}
 		}
-	}
-}
 
-// Map combines KeyMap and AxisMap.
-type Map struct {
-	KeyMap
-	AxisMap
-}
-
-// NewMap creates a new Map type with empty KeyMap and AxisMap.
-func NewMap() Map {
-	return Map{
-		KeyMap:  make(KeyMap),
-		AxisMap: make(AxisMap),
-	}
-}
-
-//ActionMap groups the handler map types.
-type ActionMap struct {
-	ActionHandlerMap
-	AxisActionHandlerMap
-}
-
-// Layers is a slice of Maps. This can be used to combine and use multiple Maps at once.
-// Maps are handled in order and if more than one KeyMap has a handler for the same Button
-// then their earlier ones have the option to stop propagation to later handlers.
-type Layers []Map
-
-// Update calls the Update methods for each Map type in the list.
-func (l Layers) Update(am ActionMap) {
-	stoppedBtns := StoppedBtnSet{}
-	stoppedAxis := StoppedAxisSet{}
-
-	for _, m := range l {
-		m.KeyMap.Update(am.ActionHandlerMap, stoppedBtns)
-		m.AxisMap.Update(am.AxisActionHandlerMap, stoppedAxis)
+		numAxis := ebiten.GamepadAxisNum(gamepadID)
+		for _, axis := range keymap.GamepadAxis.Axes() {
+			if stoppedAxes[axis] || axis >= numAxis {
+				continue
+			}
+			val := ebiten.GamepadAxis(gamepadID, axis)
+			if act, ok := keymap.GamepadAxis.GetAction(axis); ok {
+				stop := keymap.gaHandlers[act](val)
+				stoppedAxes[axis] = stop
+			}
+		}
 	}
 }
