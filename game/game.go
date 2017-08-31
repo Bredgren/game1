@@ -24,6 +24,12 @@ const (
 	right      = "right"
 	move       = "move"
 	jump       = "jump"
+	uppercut   = "uppercut"
+	slam       = "slam"
+	punch      = "punch"
+	launch     = "launch"
+	punchH     = "punch horizontal"
+	punchV     = "punch vertical"
 	fullscreen = "fullscreen"
 	pause      = "pause"
 )
@@ -96,11 +102,7 @@ func New(screenWidth, screenHeight int) *Game {
 	bg := newBackground()
 
 	g := &Game{
-		state: intro,
-		states: map[gameStateName]gameState{
-			intro:    newIntroState(p, screenHeight, cam, bg),
-			mainMenu: newMainMenu(p, screenHeight, cam),
-		},
+		state:         intro,
 		showDebugInfo: true,
 		timeScale:     1.0,
 		camera:        cam,
@@ -130,12 +132,27 @@ func New(screenWidth, screenHeight int) *Game {
 			return false
 		},
 	}
-	g.keymap[generalLayer] = keymap.New(generalActions, nil)
 
+	g.keymap[generalLayer] = keymap.New(generalActions, nil)
 	g.keymap[generalLayer].KeyMouse.Set(button.FromKey(ebiten.KeyEscape), pause)
 	g.keymap[generalLayer].KeyMouse.Set(button.FromKey(ebiten.KeyF11), fullscreen)
 	g.keymap[generalLayer].GamepadBtn.Set(ebiten.GamepadButton7, pause)
 	g.keymap[generalLayer].GamepadBtn.Set(ebiten.GamepadButton6, fullscreen)
+
+	playerActions := keymap.ButtonHandlerMap{
+		left:  p.handleLeft,
+		right: p.handleRight,
+	}
+	playerAxisActions := keymap.AxisHandlerMap{
+		move: p.handleMove,
+	}
+	g.keymap[playerLayer] = keymap.New(playerActions, playerAxisActions)
+	setDefaultKeyMap(g.keymap[playerLayer])
+
+	g.states = map[gameStateName]gameState{
+		intro:    newIntroState(p, screenHeight, cam, bg),
+		mainMenu: newMainMenu(p, screenHeight, cam, bg),
+	}
 
 	// for _, kl := range keyLabels {
 	// 	g.keyLabels[kl.name] = kl
@@ -177,14 +194,7 @@ func New(screenWidth, screenHeight int) *Game {
 
 	// keyMap := keymap.NewMap()
 	// setDefaultKeyMap(keyMap)
-	//
-	// // Keys that can't be remapped
-	// fixedKeyMap := keymap.NewMap()
-	// fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyEscape)] = pause
-	// fixedKeyMap.KeyMap[button.FromKey(ebiten.KeyF11)] = fullscreen
-	// fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton7)] = pause
-	// fixedKeyMap.KeyMap[button.FromGamepadButton(ebiten.GamepadButton6)] = fullscreen
-	//
+
 	// // This keymap layer is for disabling all input
 	// disableKeyMap := keymap.NewMap()
 	// for i := ebiten.Key0; i < ebiten.KeyMax; i++ {
@@ -302,24 +312,6 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 	ebitenutil.DebugPrint(dst, strings.Join(info, "\n"))
 }
 
-// func (g *Game) handlePlayerMoveLeft(down bool) bool {
-// 	g.player.Left = down
-// 	g.keyLabels[left].active = down
-// 	return false
-// }
-//
-// func (g *Game) handlePlayerMoveRight(down bool) bool {
-// 	g.player.Right = down
-// 	g.keyLabels[right].active = down
-// 	return false
-// }
-//
-// func (g *Game) handlePlayerMove(val float64) bool {
-// 	g.player.Move = val
-// 	g.keyLabels[move].active = val != 0
-// 	return false
-// }
-//
 // func (g *Game) handlePlayerJump(down bool) bool {
 // 	g.player.Jump = down
 // 	g.keyLabels[jump].active = down

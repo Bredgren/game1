@@ -56,7 +56,6 @@ func (p *player) update(dt time.Duration) {
 		}
 	}
 
-	// yVel := 0.0
 	if p.isJumping {
 		if p.jumpTime <= 0 || !p.Jump {
 			p.isJumping = false
@@ -85,6 +84,9 @@ func (p *player) update(dt time.Duration) {
 	}
 
 	p.bounds.SetBottomMid(p.pos.XY())
+
+	// Reset Move for next frame, it will be set each frame by user input.
+	p.Move = 0
 }
 
 func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
@@ -101,4 +103,19 @@ func (p *player) Pos() geo.Vec {
 func (p *player) SetPos(pos geo.Vec) {
 	p.pos = pos
 	p.bounds.SetBottomMid(p.pos.XY())
+}
+
+func (p *player) handleLeft(down bool) bool {
+	p.Left = down
+	return false
+}
+
+func (p *player) handleRight(down bool) bool {
+	p.Right = down
+	return false
+}
+
+func (p *player) handleMove(val float64) bool {
+	p.Move = val
+	return false
 }

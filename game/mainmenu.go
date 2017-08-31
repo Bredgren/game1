@@ -12,13 +12,15 @@ type mainMenuState struct {
 	p            *player
 	screenHeight int
 	cam          *camera.Camera
+	bg           *background
 }
 
-func newMainMenu(p *player, screenHeight int, cam *camera.Camera) *mainMenuState {
+func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background) *mainMenuState {
 	return &mainMenuState{
 		p:            p,
 		screenHeight: screenHeight,
 		cam:          cam,
+		bg:           bg,
 	}
 }
 
@@ -35,9 +37,10 @@ func (m *mainMenuState) nextState() gameStateName {
 }
 
 func (m *mainMenuState) update(dt time.Duration) {
-
+	m.p.update(dt)
 }
 
 func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
-
+	m.bg.Draw(dst, cam)
+	m.p.draw(dst, cam)
 }
