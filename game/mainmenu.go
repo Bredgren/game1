@@ -30,39 +30,100 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		cam:          cam,
 		bg:           bg,
 		keymap:       km,
-		// remap:        true,
-		// remapAction:  jump,
+		remap:        true,
+		remapAction:  jump,
 	}
 	m.setupKeymap()
 	return m
 }
 
 func (m *mainMenuState) setupKeymap() {
+	// Button handlers
 	remapHandlers := keymap.ButtonHandlerMap{}
 	for key := ebiten.Key0; key < ebiten.KeyMax; key++ {
-		remapHandlers[keymap.Action(fmt.Sprintf("key%d", key))] = m.keyRemapHandler(key)
+		action := keymap.Action(fmt.Sprintf("key%d", key))
+		remapHandlers[action] = m.keyRemapHandler(button.FromKey(key))
 	}
-	m.keymap[remapLayer] = keymap.New(remapHandlers, nil)
+	remapHandlers[keymap.Action("mouse0")] = m.keyRemapHandler(button.FromMouse(ebiten.MouseButtonLeft))
+	remapHandlers[keymap.Action("mouse1")] = m.keyRemapHandler(button.FromMouse(ebiten.MouseButtonMiddle))
+	remapHandlers[keymap.Action("mouse2")] = m.keyRemapHandler(button.FromMouse(ebiten.MouseButtonRight))
 
+	// Gamepad handlers
+	for btn := ebiten.GamepadButton0; btn < ebiten.GamepadButtonMax; btn++ {
+		action := keymap.Action(fmt.Sprintf("btn%d", btn))
+		remapHandlers[action] = m.btnRemapHandler(btn)
+	}
+
+	// Axis handlers
+	axisHandlers := keymap.AxisHandlerMap{}
+	// // We don't know how many axes there will be at this point so just do alot :P
+	// for axis := 0; axis < 100; axis++ {
+	// 	action := keymap.Action(fmt.Sprintf("axis%d", axis))
+	// 	axisHandlers[action] = m.axisRemapHandler(axis)
+	// }
+
+	m.keymap[remapLayer] = keymap.New(remapHandlers, axisHandlers)
+
+	// Button actions
 	for key := ebiten.Key0; key < ebiten.KeyMax; key++ {
-		m.keymap[remapLayer].KeyMouse.Set(button.FromKey(key), keymap.Action(fmt.Sprintf("key%d", key)))
+		action := keymap.Action(fmt.Sprintf("key%d", key))
+		m.keymap[remapLayer].KeyMouse.Set(button.FromKey(key), action)
 	}
-	log.Println(m.keymap[remapLayer])
+	m.keymap[remapLayer].KeyMouse.Set(button.FromMouse(ebiten.MouseButtonLeft), "mouse0")
+	m.keymap[remapLayer].KeyMouse.Set(button.FromMouse(ebiten.MouseButtonMiddle), "mouse1")
+	m.keymap[remapLayer].KeyMouse.Set(button.FromMouse(ebiten.MouseButtonRight), "mouse2")
 
+	// Gamepad actions
+	for btn := ebiten.GamepadButton0; btn < ebiten.GamepadButtonMax; btn++ {
+		action := keymap.Action(fmt.Sprintf("btn%d", btn))
+		m.keymap[remapLayer].GamepadBtn.Set(btn, action)
+	}
+
+	// Axis actions
+	// for axis := 0; axis < 100; axis++ {
+	// 	action := keymap.Action(fmt.Sprintf("axis%d", axis))
+	// 	m.keymap[remapLayer].GamepadAxis.Set(axis, action)
+	// }
+
+	//
 	m.keymap[uiLayer] = keymap.New(nil, nil)
 }
 
-func (m *mainMenuState) keyRemapHandler(key ebiten.Key) keymap.ButtonHandler {
+func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandler {
 	return func(down bool) bool {
 		remap := m.remap
 		if down && remap {
-			log.Println("remap to", key)
-			m.keymap[playerLayer].KeyMouse.Set(button.FromKey(key), m.remapAction)
+			log.Println("remap key to", btn)
+			m.keymap[playerLayer].KeyMouse.Set(btn, m.remapAction)
 			m.remap = false
 		}
 		return remap
 	}
 }
+
+func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonHandler {
+	return func(down bool) bool {
+		remap := m.remap
+		if down && remap {
+			log.Println("remap gamepad btn to", btn)
+			m.keymap[playerLayer].GamepadBtn.Set(btn, m.remapAction)
+			m.remap = false
+		}
+		return remap
+	}
+}
+
+// func (m *mainMenuState) axisRemapHandler(axis int) keymap.AxisHandler {
+// 	return func(val float64) bool {
+// 		remap := m.remap
+// 		if val != 0 && remap {
+// 			log.Println("remap axis to", axis)
+// 			m.keymap[playerLayer].GamepadAxis.Set(axis, m.remapAction)
+// 			m.remap = false
+// 		}
+// 		return remap
+// 	}
+// }
 
 func (m *mainMenuState) begin(previousState gameStateName) {
 	m.cam.Target = fixedCameraTarget{geo.VecXY(m.p.pos.X, -float64(m.screenHeight)*0.4)}
