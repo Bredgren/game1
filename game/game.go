@@ -55,9 +55,6 @@ type Game struct {
 	canToggleFullscreen bool
 	canTogglePause      bool
 
-	// keyLabels map[string]*keyLabel
-
-	// actions   keymap.ActionMap
 	keymap keymap.Layers
 
 	player *player
@@ -86,20 +83,6 @@ func New(screenWidth, screenHeight int) *Game {
 	cam.Shaker.Frequency = 10
 	cam.Shaker.Falloff = geo.EaseOutQuad
 
-	// keyOptionsPos := geo.VecXY(100, 100)
-	// keyOptionVGap := 2.0
-	// keyLabels := []*keyLabel{
-	// 	newKeyLabel(left, basicfont.Face7x13),
-	// 	newKeyLabel(right, basicfont.Face7x13),
-	// 	newKeyLabel(move, basicfont.Face7x13),
-	// 	newKeyLabel(jump, basicfont.Face7x13),
-	// }
-	//
-	// for _, kl := range keyLabels {
-	// 	kl.bounds.SetTopLeft(keyOptionsPos.XY())
-	// 	keyOptionsPos.Y += kl.bounds.H + keyOptionVGap
-	// }
-
 	bg := newBackground()
 
 	g := &Game{
@@ -108,8 +91,6 @@ func New(screenWidth, screenHeight int) *Game {
 		timeScale:     1.0,
 		camera:        cam,
 		background:    bg,
-
-		// keyLabels: map[string]*keyLabel{},
 
 		keymap: make(keymap.Layers, numInputLayers),
 
@@ -158,10 +139,6 @@ func New(screenWidth, screenHeight int) *Game {
 		intro:    newIntroState(p, screenHeight, cam, bg),
 		mainMenu: newMainMenu(p, screenHeight, cam, bg, g.keymap),
 	}
-
-	// for _, kl := range keyLabels {
-	// 	g.keyLabels[kl.name] = kl
-	// }
 
 	// // This keymap layer is for disabling all input
 	// disableKeyMap := keymap.NewMap()
@@ -215,12 +192,6 @@ func (g *Game) Update() {
 // given to New.
 func (g *Game) Draw(dst *ebiten.Image) {
 	drawStart := time.Now()
-
-	// if g.state == mainMenu {
-	// 	for _, kl := range g.keyLabels {
-	// 		kl.draw(dst, g.camera)
-	// 	}
-	// }
 
 	g.states[g.state].draw(dst, g.camera)
 

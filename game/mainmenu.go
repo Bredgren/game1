@@ -5,6 +5,8 @@ import (
 	"log"
 	"time"
 
+	"golang.org/x/image/font/basicfont"
+
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/keymap"
 	"github.com/Bredgren/game1/game/keymap/button"
@@ -20,6 +22,7 @@ type mainMenuState struct {
 	keymap       keymap.Layers
 	remapAction  keymap.Action
 	remap        bool
+	keyLabels    map[string]*keyLabel
 }
 
 func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background,
@@ -30,10 +33,30 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		cam:          cam,
 		bg:           bg,
 		keymap:       km,
-		remap:        true,
-		remapAction:  jump,
+
+		remap:       true,
+		remapAction: jump,
+
+		keyLabels: map[string]*keyLabel{},
 	}
+
+	keyOptionsPos := geo.VecXY(100, 100)
+	keyOptionVGap := 2.0
+	keyLabels := []*keyLabel{
+		newKeyLabel(left, basicfont.Face7x13),
+		newKeyLabel(right, basicfont.Face7x13),
+		newKeyLabel(move, basicfont.Face7x13),
+		newKeyLabel(jump, basicfont.Face7x13),
+	}
+
+	for _, kl := range keyLabels {
+		kl.bounds.SetTopLeft(keyOptionsPos.XY())
+		keyOptionsPos.Y += kl.bounds.H + keyOptionVGap
+		m.keyLabels[kl.name] = kl
+	}
+
 	m.setupKeymap()
+
 	return m
 }
 
@@ -144,4 +167,8 @@ func (m *mainMenuState) update(dt time.Duration) {
 func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.bg.Draw(dst, cam)
 	m.p.draw(dst, cam)
+
+	for _, kl := range m.keyLabels {
+		kl.draw(dst, cam)
+	}
 }
