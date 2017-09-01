@@ -53,6 +53,7 @@ type Game struct {
 	background    *background
 	// inputDisabled       bool
 	canToggleFullscreen bool
+	canTogglePause      bool
 
 	// keyLabels map[string]*keyLabel
 
@@ -117,8 +118,11 @@ func New(screenWidth, screenHeight int) *Game {
 
 	generalActions := keymap.ButtonHandlerMap{
 		pause: func(down bool) bool {
-			if down {
+			if down && g.canTogglePause {
 				log.Println("pause not implement yet")
+				g.canTogglePause = false
+			} else if !down {
+				g.canTogglePause = true
 			}
 			return true
 		},
