@@ -120,7 +120,7 @@ func New(screenWidth, screenHeight int) *Game {
 			if down {
 				log.Println("pause not implement yet")
 			}
-			return false
+			return true
 		},
 		fullscreen: func(down bool) bool {
 			if down && g.canToggleFullscreen {
@@ -129,7 +129,7 @@ func New(screenWidth, screenHeight int) *Game {
 			} else if !down {
 				g.canToggleFullscreen = true
 			}
-			return false
+			return true
 		},
 	}
 
@@ -152,7 +152,7 @@ func New(screenWidth, screenHeight int) *Game {
 
 	g.states = map[gameStateName]gameState{
 		intro:    newIntroState(p, screenHeight, cam, bg),
-		mainMenu: newMainMenu(p, screenHeight, cam, bg),
+		mainMenu: newMainMenu(p, screenHeight, cam, bg, g.keymap),
 	}
 
 	// for _, kl := range keyLabels {
