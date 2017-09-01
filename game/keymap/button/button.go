@@ -12,7 +12,7 @@ func FromKey(key ebiten.Key) KeyMouse {
 
 // FromMouse converts MouseButton to a KeyMouse.
 func FromMouse(mb ebiten.MouseButton) KeyMouse {
-	return KeyMouse(int(ebiten.KeyMax) + int(ebiten.GamepadButtonMax) + int(mb))
+	return KeyMouse(int(ebiten.KeyMax) + int(mb))
 }
 
 // IsKey returns true if the KeyMouse is an Key.
