@@ -13,10 +13,11 @@ import (
 )
 
 type keyLabel struct {
-	name   string
-	bounds geo.Rect
-	img    map[bool]*ebiten.Image
-	active bool
+	name     string
+	bounds   geo.Rect
+	img      map[bool]*ebiten.Image
+	btnDown  bool
+	axisMove bool
 }
 
 func newKeyLabel(name string, face font.Face) *keyLabel {
@@ -40,7 +41,6 @@ func newKeyLabel(name string, face font.Face) *keyLabel {
 			false: img1,
 			true:  img2,
 		},
-		active: false,
 	}
 	return k
 }
@@ -48,7 +48,17 @@ func newKeyLabel(name string, face font.Face) *keyLabel {
 func (k *keyLabel) draw(dst *ebiten.Image, cam *camera.Camera) {
 	opts := ebiten.DrawImageOptions{}
 	opts.GeoM.Translate(k.bounds.TopLeft())
-	dst.DrawImage(k.img[k.active], &opts)
+	dst.DrawImage(k.img[k.btnDown || k.axisMove], &opts)
+}
+
+func (k *keyLabel) handleBtn(down bool) bool {
+	k.btnDown = down
+	return false
+}
+
+func (k *keyLabel) handleAxis(val float64) bool {
+	k.axisMove = val != 0
+	return false
 }
 
 type keyButton struct {

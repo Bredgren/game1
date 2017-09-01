@@ -34,8 +34,8 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		bg:           bg,
 		keymap:       km,
 
-		remap:       true,
-		remapAction: jump,
+		// remap:       true,
+		// remapAction: jump,
 
 		keyLabels: map[string]*keyLabel{},
 	}
@@ -108,8 +108,17 @@ func (m *mainMenuState) setupKeymap() {
 	// 	m.keymap[remapLayer].GamepadAxis.Set(axis, action)
 	// }
 
-	//
-	m.keymap[uiLayer] = keymap.New(nil, nil)
+	// UI handlers
+	uiHandlers := keymap.ButtonHandlerMap{
+		left:  m.keyLabels[left].handleBtn,
+		right: m.keyLabels[right].handleBtn,
+		jump:  m.keyLabels[jump].handleBtn,
+	}
+	uiAxisHandlers := keymap.AxisHandlerMap{
+		move: m.keyLabels[move].handleAxis,
+	}
+	m.keymap[uiLayer] = keymap.New(uiHandlers, uiAxisHandlers)
+	setDefaultKeyMap(m.keymap[uiLayer])
 }
 
 func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandler {
