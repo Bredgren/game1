@@ -22,7 +22,7 @@ func (km KeyMouse) IsKey() bool {
 
 // IsMouse returns true if the KeyMouse is a MouseButton.
 func (km KeyMouse) IsMouse() bool {
-	return int(km) > int(ebiten.KeyMax)
+	return int(km) >= int(ebiten.KeyMax)
 }
 
 // Key converts KeyMouse to Key. The return value ok is false if it is actually a MouseButton.
