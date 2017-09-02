@@ -18,16 +18,17 @@ import (
 )
 
 type mainMenuState struct {
-	p            *player
-	screenHeight int
-	cam          *camera.Camera
-	bg           *background
-	keymap       keymap.Layers
-	remapAction  keymap.Action
-	remap        bool
-	keyLabels    map[keymap.Action]*keyLabel
-	menu         ui.Drawer
-	btn          *ui.Button
+	p              *player
+	screenHeight   int
+	cam            *camera.Camera
+	bg             *background
+	keymap         keymap.Layers
+	remapAction    keymap.Action
+	remap          bool
+	keyLabels      map[keymap.Action]*keyLabel
+	menu           ui.Drawer
+	btn            *ui.Button
+	canClickButton bool
 }
 
 func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background,
@@ -42,7 +43,8 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		// remap:       true,
 		// remapAction: jump,
 
-		keyLabels: map[keymap.Action]*keyLabel{},
+		keyLabels:      map[keymap.Action]*keyLabel{},
+		canClickButton: true,
 	}
 
 	idleImg, _ := ebiten.NewImage(40, 20, ebiten.FilterNearest)
@@ -276,9 +278,11 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 }
 
 func (m *mainMenuState) handleMouseDown(down bool) bool {
-	if down && m.btn.Hover {
+	if m.canClickButton && down && m.btn.Hover {
 		log.Println("click")
+		m.canClickButton = false
 		return true
 	}
+	m.canClickButton = !down
 	return false
 }
