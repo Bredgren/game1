@@ -22,7 +22,7 @@ type mainMenuState struct {
 	keymap       keymap.Layers
 	remapAction  keymap.Action
 	remap        bool
-	keyLabels    map[string]*keyLabel
+	keyLabels    map[keymap.Action]*keyLabel
 }
 
 func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background,
@@ -37,27 +37,30 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		// remap:       true,
 		// remapAction: jump,
 
-		keyLabels: map[string]*keyLabel{},
+		keyLabels: map[keymap.Action]*keyLabel{},
 	}
 
+	m.setupKeyLabels()
+	m.setupKeymap()
+
+	return m
+}
+
+func (m *mainMenuState) setupKeyLabels() {
 	keyOptionsPos := geo.VecXY(100, 100)
 	keyOptionVGap := 2.0
 	keyLabels := []*keyLabel{
-		newKeyLabel(left, basicfont.Face7x13),
-		newKeyLabel(right, basicfont.Face7x13),
-		newKeyLabel(move, basicfont.Face7x13),
-		newKeyLabel(jump, basicfont.Face7x13),
+		newKeyLabel(left, geo.RectCornersVec(keyOptionsPos, keyOptionsPos.Plus(geo.VecXY(50, 20))), basicfont.Face7x13),
+		// newKeyLabel(right, basicfont.Face7x13),
+		// newKeyLabel(move, basicfont.Face7x13),
+		// newKeyLabel(jump, basicfont.Face7x13),
 	}
 
 	for _, kl := range keyLabels {
 		kl.bounds.SetTopLeft(keyOptionsPos.XY())
 		keyOptionsPos.Y += kl.bounds.H + keyOptionVGap
-		m.keyLabels[kl.name] = kl
+		m.keyLabels[kl.action] = kl
 	}
-
-	m.setupKeymap()
-
-	return m
 }
 
 func (m *mainMenuState) setupKeymap() {
@@ -110,12 +113,12 @@ func (m *mainMenuState) setupKeymap() {
 
 	// UI handlers
 	uiHandlers := keymap.ButtonHandlerMap{
-		left:  m.keyLabels[left].handleBtn,
-		right: m.keyLabels[right].handleBtn,
-		jump:  m.keyLabels[jump].handleBtn,
+		left: m.keyLabels[left].handleBtn,
+		// right: m.keyLabels[right].handleBtn,
+		// jump:  m.keyLabels[jump].handleBtn,
 	}
 	uiAxisHandlers := keymap.AxisHandlerMap{
-		move: m.keyLabels[move].handleAxis,
+	// move: m.keyLabels[move].handleAxis,
 	}
 	m.keymap[uiLayer] = keymap.New(uiHandlers, uiAxisHandlers)
 	setDefaultKeyMap(m.keymap[uiLayer])
