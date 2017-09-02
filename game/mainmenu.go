@@ -27,7 +27,7 @@ type mainMenuState struct {
 	remap          bool
 	keyLabels      map[keymap.Action]*keyLabel
 	menu           ui.Drawer
-	btn            *ui.Button
+	btns           []*ui.Button
 	canClickButton bool
 }
 
@@ -52,28 +52,59 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 	hoverImg, _ := ebiten.NewImage(40, 20, ebiten.FilterNearest)
 	hoverImg.Fill(color.NRGBA{200, 200, 200, 200})
 
-	m.btn = &ui.Button{
-		IdleImg:  idleImg,
-		HoverImg: hoverImg,
-		IdleAnchor: ui.Anchor{
-			Src: geo.VecXY(0.5, 0.5),
-			Dst: geo.VecXY(0.5, 0.5),
-		},
-		HoverAnchor: ui.Anchor{
-			Src: geo.VecXY(0.5, 0.5),
-			Dst: geo.VecXY(0.5, 0.5),
-		},
-		Element: &ui.Text{
-			Anchor: ui.Anchor{
+	m.btns = []*ui.Button{
+		&ui.Button{
+			IdleImg:  idleImg,
+			HoverImg: hoverImg,
+			IdleAnchor: ui.Anchor{
 				Src: geo.VecXY(0.5, 0.5),
 				Dst: geo.VecXY(0.5, 0.5),
 			},
-			Text:  "btn",
-			Color: color.Black,
-			Face:  basicfont.Face7x13,
-			Wt:    1,
+			HoverAnchor: ui.Anchor{
+				Src: geo.VecXY(0.5, 0.5),
+				Dst: geo.VecXY(0.5, 0.5),
+			},
+			Element: &ui.Text{
+				Anchor: ui.Anchor{
+					Src: geo.VecXY(0.5, 0.5),
+					Dst: geo.VecXY(0.5, 0.5),
+				},
+				Text:  "btn",
+				Color: color.Black,
+				Face:  basicfont.Face7x13,
+				Wt:    1,
+			},
+			Wt: 1,
+			OnClick: func() {
+				log.Println("click btn")
+			},
 		},
-		Wt: 1,
+		&ui.Button{
+			IdleImg:  idleImg,
+			HoverImg: hoverImg,
+			IdleAnchor: ui.Anchor{
+				Src: geo.VecXY(0.5, 0.5),
+				Dst: geo.VecXY(0.5, 0.5),
+			},
+			HoverAnchor: ui.Anchor{
+				Src: geo.VecXY(0.5, 0.5),
+				Dst: geo.VecXY(0.5, 0.5),
+			},
+			Element: &ui.Text{
+				Anchor: ui.Anchor{
+					Src: geo.VecXY(0.5, 0.5),
+					Dst: geo.VecXY(0.5, 0.5),
+				},
+				Text:  "btn2",
+				Color: color.Black,
+				Face:  basicfont.Face7x13,
+				Wt:    1,
+			},
+			Wt: 1,
+			OnClick: func() {
+				log.Println("click btn2")
+			},
+		},
 	}
 
 	m.menu = &ui.VerticalContainer{
@@ -93,7 +124,8 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 						Face:  basicfont.Face7x13,
 						Wt:    1,
 					},
-					m.btn,
+					m.btns[0],
+					m.btns[1],
 				},
 			},
 			&ui.HorizontalContainer{
@@ -262,7 +294,10 @@ func (m *mainMenuState) nextState() gameStateName {
 
 func (m *mainMenuState) update(dt time.Duration) {
 	m.p.update(dt)
-	m.btn.Update()
+
+	for _, b := range m.btns {
+		b.Update()
+	}
 }
 
 func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
@@ -273,15 +308,19 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 		kl.draw(dst, cam)
 	}
 
-	ebitenutil.DrawRect(dst, 100, 150, 100, 100, color.NRGBA{100, 100, 100, 50})
-	m.menu.Draw(dst, geo.RectXYWH(100, 150, 100, 100))
+	ebitenutil.DrawRect(dst, 100, 150, 150, 100, color.NRGBA{100, 100, 100, 50})
+	m.menu.Draw(dst, geo.RectXYWH(100, 150, 150, 100))
 }
 
 func (m *mainMenuState) handleMouseDown(down bool) bool {
-	if m.canClickButton && down && m.btn.Hover {
-		log.Println("click")
-		m.canClickButton = false
-		return true
+	if m.canClickButton && down {
+		for _, b := range m.btns {
+			if b.Hover {
+				b.OnClick()
+				m.canClickButton = false
+				return true
+			}
+		}
 	}
 	m.canClickButton = !down
 	return false

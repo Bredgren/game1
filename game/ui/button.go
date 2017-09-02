@@ -14,6 +14,7 @@ type Button struct {
 	HoverAnchor Anchor
 	Wt          float64
 	Hover       bool
+	OnClick     func()
 	lastRect    geo.Rect
 }
 
