@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"time"
 
@@ -10,8 +11,10 @@ import (
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/keymap"
 	"github.com/Bredgren/game1/game/keymap/button"
+	"github.com/Bredgren/game1/game/ui"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
 type mainMenuState struct {
@@ -23,6 +26,8 @@ type mainMenuState struct {
 	remapAction  keymap.Action
 	remap        bool
 	keyLabels    map[keymap.Action]*keyLabel
+	menu         ui.Drawer
+	btn          *ui.Button
 }
 
 func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background,
@@ -38,6 +43,85 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		// remapAction: jump,
 
 		keyLabels: map[keymap.Action]*keyLabel{},
+	}
+
+	idleImg, _ := ebiten.NewImage(40, 20, ebiten.FilterNearest)
+	idleImg.Fill(color.NRGBA{200, 200, 200, 50})
+	hoverImg, _ := ebiten.NewImage(40, 20, ebiten.FilterNearest)
+	hoverImg.Fill(color.NRGBA{200, 200, 200, 200})
+
+	m.btn = &ui.Button{
+		IdleImg:  idleImg,
+		HoverImg: hoverImg,
+		IdleAnchor: ui.Anchor{
+			Src: geo.VecXY(0.5, 0.5),
+			Dst: geo.VecXY(0.5, 0.5),
+		},
+		HoverAnchor: ui.Anchor{
+			Src: geo.VecXY(0.5, 0.5),
+			Dst: geo.VecXY(0.5, 0.5),
+		},
+		Element: &ui.Text{
+			Anchor: ui.Anchor{
+				Src: geo.VecXY(0.5, 0.5),
+				Dst: geo.VecXY(0.5, 0.5),
+			},
+			Text:  "btn",
+			Color: color.Black,
+			Face:  basicfont.Face7x13,
+			Wt:    1,
+		},
+		Wt: 1,
+	}
+
+	m.menu = &ui.VerticalContainer{
+		Wt: 1,
+		Elements: []ui.WeightedDrawer{
+			&ui.HorizontalContainer{
+				Wt: 1,
+				Elements: []ui.WeightedDrawer{
+					&ui.Text{
+						Anchor: ui.Anchor{
+							Src:    geo.VecXY(0.5, 0.5),
+							Dst:    geo.VecXY(0.5, 0.5),
+							Offset: geo.VecXY(0, 0),
+						},
+						Text:  "text1",
+						Color: color.Black,
+						Face:  basicfont.Face7x13,
+						Wt:    1,
+					},
+					m.btn,
+				},
+			},
+			&ui.HorizontalContainer{
+				Wt: 1,
+				Elements: []ui.WeightedDrawer{
+					&ui.Text{
+						Anchor: ui.Anchor{
+							Src:    geo.VecXY(1, 0.5),
+							Dst:    geo.VecXY(1, 0.5),
+							Offset: geo.VecXY(0, -10),
+						},
+						Text:  "text2",
+						Color: color.Black,
+						Face:  basicfont.Face7x13,
+						Wt:    1,
+					},
+					&ui.Text{
+						Anchor: ui.Anchor{
+							Src:    geo.VecXY(0, 0.5),
+							Dst:    geo.VecXY(0, 0.5),
+							Offset: geo.VecXY(0, 10),
+						},
+						Text:  "text3",
+						Color: color.Black,
+						Face:  basicfont.Face7x13,
+						Wt:    1,
+					},
+				},
+			},
+		},
 	}
 
 	m.setupKeyLabels()
@@ -116,12 +200,14 @@ func (m *mainMenuState) setupKeymap() {
 		left: m.keyLabels[left].handleBtn,
 		// right: m.keyLabels[right].handleBtn,
 		// jump:  m.keyLabels[jump].handleBtn,
+		click: m.handleMouseDown,
 	}
 	uiAxisHandlers := keymap.AxisHandlerMap{
 	// move: m.keyLabels[move].handleAxis,
 	}
 	m.keymap[uiLayer] = keymap.New(uiHandlers, uiAxisHandlers)
 	setDefaultKeyMap(m.keymap[uiLayer])
+	m.keymap[uiLayer].KeyMouse.Set(button.FromMouse(ebiten.MouseButtonLeft), click)
 }
 
 func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandler {
@@ -174,6 +260,7 @@ func (m *mainMenuState) nextState() gameStateName {
 
 func (m *mainMenuState) update(dt time.Duration) {
 	m.p.update(dt)
+	m.btn.Update()
 }
 
 func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
@@ -183,4 +270,15 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	for _, kl := range m.keyLabels {
 		kl.draw(dst, cam)
 	}
+
+	ebitenutil.DrawRect(dst, 100, 150, 100, 100, color.NRGBA{100, 100, 100, 50})
+	m.menu.Draw(dst, geo.RectXYWH(100, 150, 100, 100))
+}
+
+func (m *mainMenuState) handleMouseDown(down bool) bool {
+	if down && m.btn.Hover {
+		log.Println("click")
+		return true
+	}
+	return false
 }

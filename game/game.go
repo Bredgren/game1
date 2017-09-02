@@ -32,6 +32,7 @@ const (
 	punchV     = "punch vertical"
 	fullscreen = "fullscreen"
 	pause      = "pause"
+	click      = "click"
 )
 
 const (
