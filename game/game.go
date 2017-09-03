@@ -32,14 +32,15 @@ const (
 	punchV     = "punch vertical"
 	fullscreen = "fullscreen"
 	pause      = "pause"
-	click      = "click"
+	leftClick  = "left click"
 )
 
 const (
-	generalLayer = iota
-	remapLayer
-	uiLayer
-	playerLayer
+	generalLayer   = iota
+	remapLayer     // Handles key remapping
+	leftClickLayer // Handles UI left clicks
+	uiLayer        // Handles other UI keys
+	playerLayer    // Handles player controls
 	numInputLayers
 )
 
