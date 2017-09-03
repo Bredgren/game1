@@ -139,7 +139,8 @@ func New(screenWidth, screenHeight int) *Game {
 
 	g.states = map[gameStateName]gameState{
 		intro:    newIntroState(p, screenHeight, cam, bg),
-		mainMenu: newMainMenu(p, screenHeight, cam, bg, g.keymap),
+		mainMenu: newMainMenu(p, screenHeight, screenWidth, cam, bg, g.keymap),
+		play:     newPlayState(p, screenHeight, cam, bg),
 	}
 
 	// // This keymap layer is for disabling all input

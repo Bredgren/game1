@@ -26,6 +26,7 @@ const (
 type mainMenuState struct {
 	p            *player
 	screenHeight int
+	screenWidth  int
 	cam          *camera.Camera
 	bg           *background
 	keymap       keymap.Layers
@@ -44,13 +45,16 @@ type mainMenuState struct {
 	axisMenu    ui.Drawer
 	axisBtns    map[int]*ui.Button
 	axisValText map[int]*ui.Text
+
+	playerOffScreen bool
 }
 
-func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background,
+func newMainMenu(p *player, screenHeight, screenWidth int, cam *camera.Camera, bg *background,
 	km keymap.Layers) *mainMenuState {
 	m := &mainMenuState{
 		p:            p,
 		screenHeight: screenHeight,
+		screenWidth:  screenWidth,
 		cam:          cam,
 		bg:           bg,
 		keymap:       km,
@@ -461,6 +465,7 @@ func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonH
 }
 
 func (m *mainMenuState) begin(previousState gameStateName) {
+	m.playerOffScreen = false
 	m.cam.Target = fixedCameraTarget{geo.VecXY(m.p.pos.X, -float64(m.screenHeight)*0.4)}
 	if m.axisMenu == nil {
 		// Initialize here so that we have the correct number of gamepad axes.
@@ -473,6 +478,9 @@ func (m *mainMenuState) end() {
 }
 
 func (m *mainMenuState) nextState() gameStateName {
+	if m.playerOffScreen {
+		return play
+	}
 	return mainMenu
 }
 
@@ -497,6 +505,9 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.bg.Draw(dst, cam)
 	m.p.draw(dst, cam)
 
+	pX := cam.ScreenCoords(m.p.Pos()).X
+	m.playerOffScreen = pX < 0 || pX > float64(m.screenWidth)
+
 	x, y := 120.0, 20.0
 	height := 229.0
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
@@ -507,7 +518,9 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 		m.axisMenu.Draw(dst, geo.RectXYWH(x, y, axisButtonWidth, height))
 	}
 
-	text.Draw(dst, "<-   Move off screen to begin   ->", basicfont.Face7x13, 185, m.screenHeight-20, color.White)
+	txt := "<-   Move off screen to begin   ->    " // need a few more characters to center it
+	x = float64(m.screenWidth/2 - basicfont.Face7x13.Width*len(txt)/2)
+	text.Draw(dst, txt, basicfont.Face7x13, int(x), m.screenHeight-20, color.White)
 }
 
 func (m *mainMenuState) leftMouseHandler(down bool) bool {
