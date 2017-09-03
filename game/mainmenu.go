@@ -17,7 +17,7 @@ import (
 
 const (
 	buttonWidth      = 350
-	buttonHeight     = 20
+	buttonHeight     = 16
 	axisButtonWidth  = 100
 	axisButtonHeight = 14
 )
@@ -465,7 +465,7 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.p.draw(dst, cam)
 
 	x, y := 120.0, 20.0
-	height := 263.0
+	height := 213.0
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
 
 	if m.remapAxis {
