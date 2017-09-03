@@ -80,10 +80,8 @@ func (m *mainMenuState) setupMenu() {
 	elements = append(elements, m.remapText)
 
 	actions := []keymap.Action{
-		left, right, move, jump, punchH,
+		left, right, move, jump, uppercut, slam, punch, launch, punchH, punchV,
 	}
-	m.keyText = map[keymap.Action]*ui.Text{}
-	m.gamepadText = map[keymap.Action]*ui.Text{}
 	for _, action := range actions {
 		action := action
 		m.keyText[action] = &ui.Text{
@@ -118,8 +116,8 @@ func (m *mainMenuState) setupMenu() {
 				Wt: 1,
 				Elements: []ui.WeightedDrawer{
 					m.actionText[action],
-					m.gamepadText[action],
 					m.keyText[action],
+					m.gamepadText[action],
 				},
 			},
 			Wt: 1,
@@ -142,18 +140,22 @@ func (m *mainMenuState) setupMenu() {
 
 func (m *mainMenuState) updateText() {
 	actions := []keymap.Action{
-		left, right, move, jump, punchH,
+		left, right, move, jump, uppercut, slam, punch, launch, punchH, punchV,
 	}
 	for _, action := range actions {
 		if btn, ok := m.keymap[playerLayer].KeyMouse.GetButton(action); ok {
 			m.keyText[action].Text = btn.String()
+			m.keyText[action].Color = color.Black
 		} else {
 			m.keyText[action].Text = "N/A"
+			m.keyText[action].Color = color.NRGBA{0, 0, 0, 100}
 		}
 		if btn, ok := m.keymap[playerLayer].GamepadBtn.GetButton(action); ok {
-			m.gamepadText[action].Text = fmt.Sprintf("%d", btn)
+			m.gamepadText[action].Text = fmt.Sprintf("Gampad %d", btn)
+			m.gamepadText[action].Color = color.Black
 		} else {
 			m.gamepadText[action].Text = "N/A"
+			m.gamepadText[action].Color = color.NRGBA{0, 0, 0, 100}
 		}
 	}
 }
@@ -226,12 +228,18 @@ func (m *mainMenuState) setupKeymap() {
 	}
 	// UI handlers
 	uiHandlers := keymap.ButtonHandlerMap{
-		left:  colorFn(left),
-		right: colorFn(right),
-		jump:  colorFn(jump),
+		left:     colorFn(left),
+		right:    colorFn(right),
+		jump:     colorFn(jump),
+		uppercut: colorFn(uppercut),
+		slam:     colorFn(slam),
+		punch:    colorFn(punch),
+		launch:   colorFn(launch),
 	}
 	uiAxisHandlers := keymap.AxisHandlerMap{
 	// move: m.keyLabels[move].handleAxis,
+	// punchH
+	// punchV
 	}
 	m.keymap[uiLayer] = keymap.New(uiHandlers, uiAxisHandlers)
 	setDefaultKeyMap(m.keymap[uiLayer])
@@ -247,6 +255,7 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 		if down && m.remap {
 			log.Println("remap key to", btn)
 			m.keymap[playerLayer].KeyMouse.Set(btn, m.remapAction)
+			m.keymap[uiLayer].KeyMouse.Set(btn, m.remapAction)
 			m.remap = false
 			m.remapText.Text = ""
 			m.updateText()
@@ -268,14 +277,17 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 
 func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonHandler {
 	return func(down bool) bool {
-		remap := m.remap
-		if down && remap {
+		if down && m.remap {
 			log.Println("remap gamepad btn to", btn)
 			m.keymap[playerLayer].GamepadBtn.Set(btn, m.remapAction)
+			m.keymap[uiLayer].GamepadBtn.Set(btn, m.remapAction)
 			m.remap = false
 			m.updateText()
 		}
-		return remap
+
+		// No reason to stop propagation here because either the button is up or is not
+		// remappable
+		return false
 	}
 }
 
@@ -315,8 +327,8 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.bg.Draw(dst, cam)
 	m.p.draw(dst, cam)
 
-	x, y := 120.0, 120.0
-	height := 120.0
+	x, y := 120.0, 20.0
+	height := 220.0
 	ebitenutil.DrawRect(dst, x, y, buttonWidth, height, color.NRGBA{100, 100, 100, 50})
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
 }
