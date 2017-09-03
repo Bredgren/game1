@@ -160,7 +160,11 @@ func (m *mainMenuState) updateText() {
 			m.keyText[action].Color = color.Black
 		} else {
 			m.keyText[action].Text = "N/A"
-			m.keyText[action].Color = color.NRGBA{0, 0, 0, 100}
+			if _, valid := defaultKeyMap.KeyMouse.GetButton(action); valid {
+				m.keyText[action].Color = color.NRGBA{200, 0, 0, 200}
+			} else {
+				m.keyText[action].Color = color.NRGBA{0, 0, 0, 100}
+			}
 		}
 
 		if btn, ok := m.keymap[playerLayer].GamepadBtn.GetButton(action); ok {
@@ -171,7 +175,11 @@ func (m *mainMenuState) updateText() {
 			m.gamepadText[action].Color = color.Black
 		} else {
 			m.gamepadText[action].Text = "N/A"
-			m.gamepadText[action].Color = color.NRGBA{0, 0, 0, 100}
+			if _, valid := defaultKeyMap.GamepadBtn.GetButton(action); valid {
+				m.gamepadText[action].Color = color.NRGBA{200, 0, 0, 200}
+			} else {
+				m.gamepadText[action].Color = color.NRGBA{0, 0, 0, 100}
+			}
 		}
 	}
 }
