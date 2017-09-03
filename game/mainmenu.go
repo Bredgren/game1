@@ -13,12 +13,13 @@ import (
 	"github.com/Bredgren/game1/game/ui"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
 const (
-	buttonWidth  = 350
-	buttonHeight = 20
+	buttonWidth      = 350
+	buttonHeight     = 20
+	axisButtonWidth  = 100
+	axisButtonHeight = 14
 )
 
 type mainMenuState struct {
@@ -29,6 +30,7 @@ type mainMenuState struct {
 	keymap       keymap.Layers
 	remapAction  keymap.Action
 	remap        bool
+	remapAxis    bool
 	remapText    *ui.Text
 
 	menu           ui.Drawer
@@ -37,6 +39,10 @@ type mainMenuState struct {
 	keyText        map[keymap.Action]*ui.Text
 	gamepadText    map[keymap.Action]*ui.Text
 	canClickButton bool
+
+	axisMenu    ui.Drawer
+	axisBtns    map[int]*ui.Button
+	axisValText map[int]*ui.Text
 }
 
 func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background,
@@ -53,6 +59,9 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		keyText:        map[keymap.Action]*ui.Text{},
 		gamepadText:    map[keymap.Action]*ui.Text{},
 		canClickButton: true,
+
+		axisBtns:    map[int]*ui.Button{},
+		axisValText: map[int]*ui.Text{},
 	}
 
 	m.setupMenu()
@@ -84,7 +93,6 @@ func (m *mainMenuState) setupMenu() {
 	for _, action := range actions {
 		action := action // For use in callbacks
 
-		_, isAxis := m.keymap[playerLayer].GamepadAxis.GetAxis(action)
 		m.keyText[action] = &ui.Text{
 			Anchor: ui.AnchorLeft,
 			Color:  color.Black,
@@ -110,17 +118,21 @@ func (m *mainMenuState) setupMenu() {
 		}
 
 		var onClick func()
+
+		_, isAxis := m.keymap[playerLayer].GamepadAxis.GetAxis(action)
+
 		if isAxis {
 			onClick = func() {
-				// m.remap = true
-				// m.remapAction = action
+				m.remapAxis = true
+				m.remapAction = action
 				m.remapText.Text = fmt.Sprintf("Select new axis for '%s'", action)
 			}
 		} else {
 			onClick = func() {
+				m.remapAxis = false // to close the axis window if it's open
 				m.remap = true
 				m.remapAction = action
-				m.remapText.Text = fmt.Sprintf("Press new key/mouse button for '%s'", action)
+				m.remapText.Text = fmt.Sprintf("Press new key/mouse/gamepad button for '%s'", action)
 			}
 		}
 		m.btns[action] = &ui.Button{
@@ -150,6 +162,69 @@ func (m *mainMenuState) setupMenu() {
 	m.updateText()
 }
 
+func (m *mainMenuState) setupAxisMenu() {
+	idleImg, _ := ebiten.NewImage(axisButtonWidth, axisButtonHeight, ebiten.FilterNearest)
+	idleImg.Fill(color.NRGBA{200, 200, 200, 50})
+	hoverImg, _ := ebiten.NewImage(axisButtonWidth, axisButtonHeight, ebiten.FilterNearest)
+	hoverImg.Fill(color.NRGBA{100, 100, 100, 50})
+
+	var elements []ui.WeightedDrawer
+	elements = append(elements, &ui.Text{
+		Anchor: ui.AnchorCenter,
+		Color:  color.Black,
+		Face:   basicfont.Face7x13,
+		Text:   "Select Axis",
+		Wt:     1,
+	})
+
+	for axis := 0; axis < ebiten.GamepadAxisNum(0); axis++ {
+		axis := axis
+		m.axisValText[axis] = &ui.Text{
+			Anchor: ui.AnchorLeft,
+			Color:  color.Black,
+			Face:   basicfont.Face7x13,
+			Text:   "(0)",
+			Wt:     1,
+		}
+		m.axisBtns[axis] = &ui.Button{
+			IdleImg:     idleImg,
+			HoverImg:    hoverImg,
+			IdleAnchor:  ui.AnchorCenter,
+			HoverAnchor: ui.AnchorCenter,
+			Element: &ui.HorizontalContainer{
+				Wt: 1,
+				Elements: []ui.WeightedDrawer{
+					&ui.Text{
+						Anchor: ui.Anchor{
+							Src:    geo.VecXY(0, 0.5),
+							Dst:    geo.VecXY(0, 0.5),
+							Offset: geo.VecXY(2, 0),
+						},
+						Color: color.Black,
+						Face:  basicfont.Face7x13,
+						Text:  fmt.Sprintf("Axis %d", axis),
+						Wt:    1,
+					},
+					m.axisValText[axis],
+				},
+			},
+			Wt: 1,
+			OnClick: func() {
+				m.keymap[playerLayer].GamepadAxis.Set(axis, m.remapAction)
+				m.keymap[uiLayer].GamepadAxis.Set(axis, m.remapAction)
+				m.remapAxis = false
+				m.updateText()
+			},
+		}
+		elements = append(elements, m.axisBtns[axis])
+	}
+
+	m.axisMenu = &ui.VerticalContainer{
+		Wt:       1,
+		Elements: elements,
+	}
+}
+
 func (m *mainMenuState) updateText() {
 	actions := []keymap.Action{
 		left, right, move, jump, punch, punchH, punchV, uppercut, slam, launch,
@@ -175,7 +250,9 @@ func (m *mainMenuState) updateText() {
 			m.gamepadText[action].Color = color.Black
 		} else {
 			m.gamepadText[action].Text = "N/A"
-			if _, valid := defaultKeyMap.GamepadBtn.GetButton(action); valid {
+			_, validBtn := defaultKeyMap.GamepadBtn.GetButton(action)
+			_, validAxis := defaultKeyMap.GamepadAxis.GetAxis(action)
+			if validBtn || validAxis {
 				m.gamepadText[action].Color = color.NRGBA{200, 0, 0, 200}
 			} else {
 				m.gamepadText[action].Color = color.NRGBA{0, 0, 0, 100}
@@ -339,6 +416,9 @@ func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonH
 
 func (m *mainMenuState) begin(previousState gameStateName) {
 	m.cam.Target = fixedCameraTarget{geo.VecXY(m.p.pos.X, -float64(m.screenHeight)*0.4)}
+	if m.axisMenu == nil {
+		m.setupAxisMenu()
+	}
 }
 
 func (m *mainMenuState) end() {
@@ -355,6 +435,11 @@ func (m *mainMenuState) update(dt time.Duration) {
 	for _, b := range m.btns {
 		b.Update()
 	}
+	if m.remapAxis {
+		for _, b := range m.axisBtns {
+			b.Update()
+		}
+	}
 }
 
 func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
@@ -363,8 +448,15 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 
 	x, y := 120.0, 20.0
 	height := 220.0
-	ebitenutil.DrawRect(dst, x, y, buttonWidth, height, color.NRGBA{100, 100, 100, 50})
+	// ebitenutil.DrawRect(dst, x, y, buttonWidth, height, color.NRGBA{100, 100, 100, 50})
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
+
+	if m.remapAxis {
+		height = 110
+		x, y = x+buttonWidth+10, y+50
+		// ebitenutil.DrawRect(dst, x, y, axisButtonWidth, height, color.NRGBA{100, 100, 100, 50})
+		m.axisMenu.Draw(dst, geo.RectXYWH(x, y, axisButtonWidth, height))
+	}
 }
 
 func (m *mainMenuState) leftMouseHandler(down bool) bool {
@@ -374,6 +466,15 @@ func (m *mainMenuState) leftMouseHandler(down bool) bool {
 				b.OnClick()
 				m.canClickButton = false
 				return true
+			}
+		}
+		if m.remapAxis {
+			for _, b := range m.axisBtns {
+				if b.Hover {
+					b.OnClick()
+					m.canClickButton = false
+					return true
+				}
 			}
 		}
 	}
