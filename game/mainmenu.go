@@ -193,6 +193,38 @@ func (m *mainMenuState) setupMenu() {
 		})
 	}
 
+	idleImg, _ = ebiten.NewImage(buttonWidth/3, buttonHeight, ebiten.FilterNearest)
+	idleImg.Fill(color.NRGBA{200, 200, 200, 50})
+	hoverImg, _ = ebiten.NewImage(buttonWidth/3, buttonHeight, ebiten.FilterNearest)
+	hoverImg.Fill(color.NRGBA{100, 100, 100, 50})
+	b := &ui.Button{
+		IdleImg:     idleImg,
+		HoverImg:    hoverImg,
+		IdleAnchor:  ui.AnchorCenter,
+		HoverAnchor: ui.AnchorCenter,
+		Element: &ui.HorizontalContainer{
+			Wt: 1,
+			Elements: []ui.WeightedDrawer{
+				&ui.Text{
+					Text:   "Restore Default",
+					Anchor: ui.AnchorCenter,
+					Color:  color.Black,
+					Face:   basicfont.Face7x13,
+					Wt:     1,
+				},
+			},
+		},
+		Wt: 1,
+		OnClick: func() {
+			setDefaultKeyMap(m.keymap[playerLayer])
+			setDefaultKeyMap(m.keymap[uiLayer])
+			m.updateText()
+		},
+	}
+
+	m.btns[keymap.Action("reset")] = b
+	elements = append(elements, b)
+
 	m.menu = &ui.VerticalContainer{
 		Wt:       1,
 		Elements: elements,
@@ -465,7 +497,7 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.p.draw(dst, cam)
 
 	x, y := 120.0, 20.0
-	height := 213.0
+	height := 229.0
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
 
 	if m.remapAxis {
