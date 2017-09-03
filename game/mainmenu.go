@@ -80,7 +80,7 @@ func (m *mainMenuState) setupMenu() {
 	elements = append(elements, m.remapText)
 
 	actions := []keymap.Action{
-		left, right, move, jump, uppercut, slam, punch, launch, punchH, punchV,
+		left, right, move, jump, punch, punchH, punchV, uppercut, slam, launch,
 	}
 	for _, action := range actions {
 		action := action
@@ -124,7 +124,7 @@ func (m *mainMenuState) setupMenu() {
 			OnClick: func() {
 				m.remap = true
 				m.remapAction = action
-				m.remapText.Text = fmt.Sprintf("Remap action '%s'", action)
+				m.remapText.Text = fmt.Sprintf("Select new key for '%s'", action)
 			},
 		}
 		elements = append(elements, m.btns[action])
@@ -140,7 +140,7 @@ func (m *mainMenuState) setupMenu() {
 
 func (m *mainMenuState) updateText() {
 	actions := []keymap.Action{
-		left, right, move, jump, uppercut, slam, punch, launch, punchH, punchV,
+		left, right, move, jump, punch, punchH, punchV, uppercut, slam, launch,
 	}
 	for _, action := range actions {
 		if btn, ok := m.keymap[playerLayer].KeyMouse.GetButton(action); ok {
@@ -252,7 +252,8 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 			return false
 		}
 
-		if down && m.remap {
+		_, valid := m.keymap[playerLayer].KeyMouse.GetButton(m.remapAction)
+		if down && m.remap && valid {
 			log.Println("remap key to", btn)
 			m.keymap[playerLayer].KeyMouse.Set(btn, m.remapAction)
 			m.keymap[uiLayer].KeyMouse.Set(btn, m.remapAction)
@@ -277,7 +278,8 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 
 func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonHandler {
 	return func(down bool) bool {
-		if down && m.remap {
+		_, valid := m.keymap[playerLayer].GamepadBtn.GetButton(m.remapAction)
+		if down && m.remap && valid {
 			log.Println("remap gamepad btn to", btn)
 			m.keymap[playerLayer].GamepadBtn.Set(btn, m.remapAction)
 			m.keymap[uiLayer].GamepadBtn.Set(btn, m.remapAction)

@@ -48,6 +48,8 @@ func setDefaultKeyMap(km *keymap.KeyMap) {
 	km.KeyMouse.Set(button.FromMouse(ebiten.MouseButtonLeft), punch)
 	km.KeyMouse.Set(button.FromMouse(ebiten.MouseButtonRight), launch)
 
+	km.GamepadBtn.Set(ebiten.GamepadButton13, left)
+	km.GamepadBtn.Set(ebiten.GamepadButton11, right)
 	km.GamepadBtn.Set(ebiten.GamepadButton0, jump)
 	km.GamepadBtn.Set(ebiten.GamepadButton3, uppercut)
 	km.GamepadBtn.Set(ebiten.GamepadButton5, launch)
