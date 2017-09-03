@@ -279,15 +279,7 @@ func (m *mainMenuState) setupKeymap() {
 		remapHandlers[action] = m.btnRemapHandler(btn)
 	}
 
-	// Axis handlers
-	axisHandlers := keymap.AxisHandlerMap{}
-	// // We don't know how many axes there will be at this point so just do alot :P
-	// for axis := 0; axis < 100; axis++ {
-	// 	action := keymap.Action(fmt.Sprintf("axis%d", axis))
-	// 	axisHandlers[action] = m.axisRemapHandler(axis)
-	// }
-
-	m.keymap[remapLayer] = keymap.New(remapHandlers, axisHandlers)
+	m.keymap[remapLayer] = keymap.New(remapHandlers, nil)
 
 	// Button actions
 	for key := ebiten.Key0; key <= ebiten.KeyMax; key++ {
@@ -303,12 +295,6 @@ func (m *mainMenuState) setupKeymap() {
 		action := keymap.Action(fmt.Sprintf("btn%d", btn))
 		m.keymap[remapLayer].GamepadBtn.Set(btn, action)
 	}
-
-	// Axis actions
-	// for axis := 0; axis < 100; axis++ {
-	// 	action := keymap.Action(fmt.Sprintf("axis%d", axis))
-	// 	m.keymap[remapLayer].GamepadAxis.Set(axis, action)
-	// }
 
 	//// Setup UI handlers
 	leftClickHandlers := keymap.ButtonHandlerMap{
@@ -402,21 +388,10 @@ func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonH
 	}
 }
 
-// func (m *mainMenuState) axisRemapHandler(axis int) keymap.AxisHandler {
-// 	return func(val float64) bool {
-// 		remap := m.remap
-// 		if val != 0 && remap {
-// 			log.Println("remap axis to", axis)
-// 			m.keymap[playerLayer].GamepadAxis.Set(axis, m.remapAction)
-// 			m.remap = false
-// 		}
-// 		return remap
-// 	}
-// }
-
 func (m *mainMenuState) begin(previousState gameStateName) {
 	m.cam.Target = fixedCameraTarget{geo.VecXY(m.p.pos.X, -float64(m.screenHeight)*0.4)}
 	if m.axisMenu == nil {
+		// Initialize here so that we have the correct number of gamepad axes.
 		m.setupAxisMenu()
 	}
 }
@@ -439,6 +414,10 @@ func (m *mainMenuState) update(dt time.Duration) {
 		for _, b := range m.axisBtns {
 			b.Update()
 		}
+
+		for axis := 0; axis < ebiten.GamepadAxisNum(0); axis++ {
+			m.axisValText[axis].Text = fmt.Sprintf("(%.2f)", ebiten.GamepadAxis(0, axis))
+		}
 	}
 }
 
@@ -448,13 +427,11 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 
 	x, y := 120.0, 20.0
 	height := 220.0
-	// ebitenutil.DrawRect(dst, x, y, buttonWidth, height, color.NRGBA{100, 100, 100, 50})
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
 
 	if m.remapAxis {
 		height = 110
 		x, y = x+buttonWidth+10, y+50
-		// ebitenutil.DrawRect(dst, x, y, axisButtonWidth, height, color.NRGBA{100, 100, 100, 50})
 		m.axisMenu.Draw(dst, geo.RectXYWH(x, y, axisButtonWidth, height))
 	}
 }
