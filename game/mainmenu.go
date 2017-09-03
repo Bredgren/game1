@@ -151,7 +151,7 @@ func (m *mainMenuState) updateText() {
 			m.keyText[action].Color = color.NRGBA{0, 0, 0, 100}
 		}
 		if btn, ok := m.keymap[playerLayer].GamepadBtn.GetButton(action); ok {
-			m.gamepadText[action].Text = fmt.Sprintf("Gampad %d", btn)
+			m.gamepadText[action].Text = fmt.Sprintf("Gamepad %d", btn)
 			m.gamepadText[action].Color = color.Black
 		} else {
 			m.gamepadText[action].Text = "N/A"
