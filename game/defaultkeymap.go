@@ -51,6 +51,7 @@ func setDefaultKeyMap(km *keymap.KeyMap) {
 	km.GamepadBtn.Set(ebiten.GamepadButton0, jump)
 	km.GamepadBtn.Set(ebiten.GamepadButton3, uppercut)
 	km.GamepadBtn.Set(ebiten.GamepadButton5, launch)
+	km.GamepadBtn.Set(ebiten.GamepadButton2, slam)
 	km.GamepadBtn.Set(ebiten.GamepadButton7, pause)
 
 	km.GamepadAxis.Set(0, move)
