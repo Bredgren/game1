@@ -120,7 +120,7 @@ func (m *mainMenuState) setupMenu() {
 			onClick = func() {
 				m.remap = true
 				m.remapAction = action
-				m.remapText.Text = fmt.Sprintf("Select new key for '%s'", action)
+				m.remapText.Text = fmt.Sprintf("Press new key/mouse button for '%s'", action)
 			}
 		}
 		m.btns[action] = &ui.Button{
