@@ -3,7 +3,6 @@ package game
 import (
 	"fmt"
 	"image/color"
-	"log"
 	"time"
 
 	"golang.org/x/image/font/basicfont"
@@ -83,7 +82,9 @@ func (m *mainMenuState) setupMenu() {
 		left, right, move, jump, punch, punchH, punchV, uppercut, slam, launch,
 	}
 	for _, action := range actions {
-		action := action
+		action := action // For use in callbacks
+
+		_, isAxis := m.keymap[playerLayer].GamepadAxis.GetAxis(action)
 		m.keyText[action] = &ui.Text{
 			Anchor: ui.AnchorLeft,
 			Color:  color.Black,
@@ -105,7 +106,22 @@ func (m *mainMenuState) setupMenu() {
 			},
 			Color: color.Black,
 			Face:  basicfont.Face7x13,
-			Wt:    1.8,
+			Wt:    1.6,
+		}
+
+		var onClick func()
+		if isAxis {
+			onClick = func() {
+				// m.remap = true
+				// m.remapAction = action
+				m.remapText.Text = fmt.Sprintf("Select new axis for '%s'", action)
+			}
+		} else {
+			onClick = func() {
+				m.remap = true
+				m.remapAction = action
+				m.remapText.Text = fmt.Sprintf("Select new key for '%s'", action)
+			}
 		}
 		m.btns[action] = &ui.Button{
 			IdleImg:     idleImg,
@@ -120,12 +136,8 @@ func (m *mainMenuState) setupMenu() {
 					m.gamepadText[action],
 				},
 			},
-			Wt: 1,
-			OnClick: func() {
-				m.remap = true
-				m.remapAction = action
-				m.remapText.Text = fmt.Sprintf("Select new key for '%s'", action)
-			},
+			Wt:      1,
+			OnClick: onClick,
 		}
 		elements = append(elements, m.btns[action])
 	}
@@ -150,8 +162,12 @@ func (m *mainMenuState) updateText() {
 			m.keyText[action].Text = "N/A"
 			m.keyText[action].Color = color.NRGBA{0, 0, 0, 100}
 		}
+
 		if btn, ok := m.keymap[playerLayer].GamepadBtn.GetButton(action); ok {
 			m.gamepadText[action].Text = fmt.Sprintf("Gamepad %d", btn)
+			m.gamepadText[action].Color = color.Black
+		} else if axis, ok := m.keymap[playerLayer].GamepadAxis.GetAxis(action); ok {
+			m.gamepadText[action].Text = fmt.Sprintf("Axis %d", axis)
 			m.gamepadText[action].Color = color.Black
 		} else {
 			m.gamepadText[action].Text = "N/A"
@@ -226,6 +242,16 @@ func (m *mainMenuState) setupKeymap() {
 			return false
 		}
 	}
+
+	axisFn := func(action keymap.Action) keymap.AxisHandler {
+		return func(val float64) bool {
+			var axis int
+			fmt.Sscanf(m.gamepadText[action].Text, "Axis %d", &axis)
+			m.gamepadText[action].Text = fmt.Sprintf("Axis %d (%.2f)", axis, val)
+			return false
+		}
+	}
+
 	// UI handlers
 	uiHandlers := keymap.ButtonHandlerMap{
 		left:     colorFn(left),
@@ -237,9 +263,9 @@ func (m *mainMenuState) setupKeymap() {
 		launch:   colorFn(launch),
 	}
 	uiAxisHandlers := keymap.AxisHandlerMap{
-	// move: m.keyLabels[move].handleAxis,
-	// punchH
-	// punchV
+		move:   axisFn(move),
+		punchH: axisFn(punchH),
+		punchV: axisFn(punchV),
 	}
 	m.keymap[uiLayer] = keymap.New(uiHandlers, uiAxisHandlers)
 	setDefaultKeyMap(m.keymap[uiLayer])
@@ -252,9 +278,8 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 			return false
 		}
 
-		_, valid := m.keymap[playerLayer].KeyMouse.GetButton(m.remapAction)
+		_, valid := defaultKeyMap.KeyMouse.GetButton(m.remapAction)
 		if down && m.remap && valid {
-			log.Println("remap key to", btn)
 			m.keymap[playerLayer].KeyMouse.Set(btn, m.remapAction)
 			m.keymap[uiLayer].KeyMouse.Set(btn, m.remapAction)
 			m.remap = false
@@ -278,9 +303,8 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 
 func (m *mainMenuState) btnRemapHandler(btn ebiten.GamepadButton) keymap.ButtonHandler {
 	return func(down bool) bool {
-		_, valid := m.keymap[playerLayer].GamepadBtn.GetButton(m.remapAction)
+		_, valid := defaultKeyMap.GamepadBtn.GetButton(m.remapAction)
 		if down && m.remap && valid {
-			log.Println("remap gamepad btn to", btn)
 			m.keymap[playerLayer].GamepadBtn.Set(btn, m.remapAction)
 			m.keymap[uiLayer].GamepadBtn.Set(btn, m.remapAction)
 			m.remap = false

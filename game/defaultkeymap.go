@@ -60,3 +60,10 @@ func setDefaultKeyMap(km *keymap.KeyMap) {
 	km.GamepadAxis.Set(2, punchH)
 	km.GamepadAxis.Set(3, punchV)
 }
+
+var defaultKeyMap *keymap.KeyMap
+
+func init() {
+	defaultKeyMap = keymap.New(nil, nil)
+	setDefaultKeyMap(defaultKeyMap)
+}
