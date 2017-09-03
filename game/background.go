@@ -52,7 +52,7 @@ func newBackground() *background {
 		},
 		cloudScaleMin:  geo.VecXY(0.5, 0.5),
 		cloudScaleMax:  geo.VecXY(10, 2),
-		cloudMinHight:  150, // Lowest a cloud can be
+		cloudMinHight:  300, // Lowest a cloud can be
 		cloudThickness: 700, // Vertical size of the area a cloud can be
 
 		groundColor: color.NRGBA{60, 60, 60, 255},
@@ -115,7 +115,7 @@ func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
 
 		opts.GeoM.Reset()
 
-		opts.GeoM.Rotate(noise2 * 2 * math.Pi)
+		opts.GeoM.Rotate(noise2 * 10 * math.Pi)
 
 		xScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.X, b.cloudScaleMax.X)
 		yScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.Y, b.cloudScaleMax.Y)
