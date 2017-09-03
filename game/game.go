@@ -22,7 +22,7 @@ const (
 	ignore     = "ignore"
 	left       = "left"
 	right      = "right"
-	move       = "move"
+	move       = "left/right"
 	jump       = "jump"
 	uppercut   = "uppercut"
 	slam       = "slam"
