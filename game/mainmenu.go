@@ -34,6 +34,7 @@ type mainMenuState struct {
 
 	menu           ui.Drawer
 	btns           map[keymap.Action]*ui.Button
+	actionText     map[keymap.Action]*ui.Text
 	keyText        map[keymap.Action]*ui.Text
 	gamepadText    map[keymap.Action]*ui.Text
 	canClickButton bool
@@ -49,6 +50,7 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		keymap:       km,
 
 		btns:           map[keymap.Action]*ui.Button{},
+		actionText:     map[keymap.Action]*ui.Text{},
 		keyText:        map[keymap.Action]*ui.Text{},
 		gamepadText:    map[keymap.Action]*ui.Text{},
 		canClickButton: true,
@@ -61,7 +63,6 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 }
 
 func (m *mainMenuState) setupMenu() {
-
 	idleImg, _ := ebiten.NewImage(buttonWidth, buttonHeight, ebiten.FilterNearest)
 	idleImg.Fill(color.NRGBA{200, 200, 200, 50})
 	hoverImg, _ := ebiten.NewImage(buttonWidth, buttonHeight, ebiten.FilterNearest)
@@ -97,6 +98,17 @@ func (m *mainMenuState) setupMenu() {
 			Face:   basicfont.Face7x13,
 			Wt:     1,
 		}
+		m.actionText[action] = &ui.Text{
+			Text: string(action),
+			Anchor: ui.Anchor{
+				Src:    geo.VecXY(0, 0.5),
+				Dst:    geo.VecXY(0, 0.5),
+				Offset: geo.VecXY(5, 0),
+			},
+			Color: color.Black,
+			Face:  basicfont.Face7x13,
+			Wt:    1.8,
+		}
 		m.btns[action] = &ui.Button{
 			IdleImg:     idleImg,
 			HoverImg:    hoverImg,
@@ -105,24 +117,13 @@ func (m *mainMenuState) setupMenu() {
 			Element: &ui.HorizontalContainer{
 				Wt: 1,
 				Elements: []ui.WeightedDrawer{
-					&ui.Text{
-						Text: string(action),
-						Anchor: ui.Anchor{
-							Src:    geo.VecXY(0, 0.5),
-							Dst:    geo.VecXY(0, 0.5),
-							Offset: geo.VecXY(5, 0),
-						},
-						Color: color.Black,
-						Face:  basicfont.Face7x13,
-						Wt:    1.8,
-					},
+					m.actionText[action],
 					m.gamepadText[action],
 					m.keyText[action],
 				},
 			},
 			Wt: 1,
 			OnClick: func() {
-				log.Println("remap", action)
 				m.remap = true
 				m.remapAction = action
 				m.remapText.Text = fmt.Sprintf("Remap action '%s'", action)
@@ -213,11 +214,21 @@ func (m *mainMenuState) setupKeymap() {
 	m.keymap[leftClickLayer] = keymap.New(leftClickHandlers, nil)
 	m.keymap[leftClickLayer].KeyMouse.Set(button.FromMouse(ebiten.MouseButtonLeft), leftClick)
 
+	colorFn := func(action keymap.Action) keymap.ButtonHandler {
+		return func(down bool) bool {
+			if down {
+				m.actionText[action].Color = color.White
+			} else {
+				m.actionText[action].Color = color.Black
+			}
+			return false
+		}
+	}
 	// UI handlers
 	uiHandlers := keymap.ButtonHandlerMap{
-	// left: m.keyLabels[left].handleBtn,
-	// right: m.keyLabels[right].handleBtn,
-	// jump:  m.keyLabels[jump].handleBtn,
+		left:  colorFn(left),
+		right: colorFn(right),
+		jump:  colorFn(jump),
 	}
 	uiAxisHandlers := keymap.AxisHandlerMap{
 	// move: m.keyLabels[move].handleAxis,
