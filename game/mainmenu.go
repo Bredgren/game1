@@ -24,6 +24,7 @@ type mainMenuState struct {
 	keymap       keymap.Layers
 	remapAction  keymap.Action
 	remap        bool
+	remapText    *ui.Text
 
 	menu           ui.Drawer
 	btns           map[keymap.Action]*ui.Button
@@ -61,9 +62,18 @@ func (m *mainMenuState) setupMenu() {
 	idleImg, _ := ebiten.NewImage(100, 20, ebiten.FilterNearest)
 	idleImg.Fill(color.NRGBA{200, 200, 200, 50})
 	hoverImg, _ := ebiten.NewImage(100, 20, ebiten.FilterNearest)
-	hoverImg.Fill(color.NRGBA{200, 200, 200, 200})
+	hoverImg.Fill(color.NRGBA{100, 100, 100, 50})
 
 	var elements []ui.WeightedDrawer
+
+	m.remapText = &ui.Text{
+		Anchor: ui.AnchorCenter,
+		Color:  color.Black,
+		Face:   basicfont.Face7x13,
+		Wt:     0.5,
+	}
+
+	elements = append(elements, m.remapText)
 
 	actions := []keymap.Action{
 		left, right,
@@ -93,11 +103,15 @@ func (m *mainMenuState) setupMenu() {
 				Wt: 1,
 				Elements: []ui.WeightedDrawer{
 					&ui.Text{
-						Text:   string(action),
-						Anchor: ui.AnchorLeft,
-						Color:  color.Black,
-						Face:   basicfont.Face7x13,
-						Wt:     2,
+						Text: string(action),
+						Anchor: ui.Anchor{
+							Src:    geo.VecXY(0, 0.5),
+							Dst:    geo.VecXY(0, 0.5),
+							Offset: geo.VecXY(5, 0),
+						},
+						Color: color.Black,
+						Face:  basicfont.Face7x13,
+						Wt:    2,
 					},
 					m.gamepadText[action],
 					m.keyText[action],
@@ -108,6 +122,7 @@ func (m *mainMenuState) setupMenu() {
 				log.Println("remap", action)
 				m.remap = true
 				m.remapAction = action
+				m.remapText.Text = fmt.Sprintf("Remap action '%s'", action)
 			},
 		}
 		elements = append(elements, m.btns[action])
@@ -219,6 +234,7 @@ func (m *mainMenuState) keyRemapHandler(btn button.KeyMouse) keymap.ButtonHandle
 			log.Println("remap key to", btn)
 			m.keymap[playerLayer].KeyMouse.Set(btn, m.remapAction)
 			m.remap = false
+			m.remapText.Text = ""
 			m.updateText()
 
 			if btn.IsMouse() {
