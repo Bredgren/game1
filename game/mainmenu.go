@@ -14,6 +14,12 @@ import (
 	"github.com/Bredgren/game1/game/ui"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/ebitenutil"
+)
+
+const (
+	buttonWidth  = 350
+	buttonHeight = 20
 )
 
 type mainMenuState struct {
@@ -42,9 +48,6 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 		bg:           bg,
 		keymap:       km,
 
-		// remap:       true,
-		// remapAction: left,
-
 		btns:           map[keymap.Action]*ui.Button{},
 		keyText:        map[keymap.Action]*ui.Text{},
 		gamepadText:    map[keymap.Action]*ui.Text{},
@@ -59,9 +62,9 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 
 func (m *mainMenuState) setupMenu() {
 
-	idleImg, _ := ebiten.NewImage(100, 20, ebiten.FilterNearest)
+	idleImg, _ := ebiten.NewImage(buttonWidth, buttonHeight, ebiten.FilterNearest)
 	idleImg.Fill(color.NRGBA{200, 200, 200, 50})
-	hoverImg, _ := ebiten.NewImage(100, 20, ebiten.FilterNearest)
+	hoverImg, _ := ebiten.NewImage(buttonWidth, buttonHeight, ebiten.FilterNearest)
 	hoverImg.Fill(color.NRGBA{100, 100, 100, 50})
 
 	var elements []ui.WeightedDrawer
@@ -76,7 +79,7 @@ func (m *mainMenuState) setupMenu() {
 	elements = append(elements, m.remapText)
 
 	actions := []keymap.Action{
-		left, right,
+		left, right, move, jump, punchH,
 	}
 	m.keyText = map[keymap.Action]*ui.Text{}
 	m.gamepadText = map[keymap.Action]*ui.Text{}
@@ -111,7 +114,7 @@ func (m *mainMenuState) setupMenu() {
 						},
 						Color: color.Black,
 						Face:  basicfont.Face7x13,
-						Wt:    2,
+						Wt:    1.8,
 					},
 					m.gamepadText[action],
 					m.keyText[action],
@@ -138,18 +141,18 @@ func (m *mainMenuState) setupMenu() {
 
 func (m *mainMenuState) updateText() {
 	actions := []keymap.Action{
-		left, right,
+		left, right, move, jump, punchH,
 	}
 	for _, action := range actions {
 		if btn, ok := m.keymap[playerLayer].KeyMouse.GetButton(action); ok {
-			m.keyText[action].Text = fmt.Sprintf("%d", btn)
+			m.keyText[action].Text = btn.String()
 		} else {
-			m.keyText[action].Text = "-"
+			m.keyText[action].Text = "N/A"
 		}
 		if btn, ok := m.keymap[playerLayer].GamepadBtn.GetButton(action); ok {
 			m.gamepadText[action].Text = fmt.Sprintf("%d", btn)
 		} else {
-			m.gamepadText[action].Text = "-"
+			m.gamepadText[action].Text = "N/A"
 		}
 	}
 }
@@ -158,7 +161,7 @@ func (m *mainMenuState) setupKeymap() {
 	//// Setup remap layer
 	// Button handlers
 	remapHandlers := keymap.ButtonHandlerMap{}
-	for key := ebiten.Key0; key < ebiten.KeyMax; key++ {
+	for key := ebiten.Key0; key <= ebiten.KeyMax; key++ {
 		action := keymap.Action(fmt.Sprintf("key%d", key))
 		remapHandlers[action] = m.keyRemapHandler(button.FromKey(key))
 	}
@@ -183,7 +186,7 @@ func (m *mainMenuState) setupKeymap() {
 	m.keymap[remapLayer] = keymap.New(remapHandlers, axisHandlers)
 
 	// Button actions
-	for key := ebiten.Key0; key < ebiten.KeyMax; key++ {
+	for key := ebiten.Key0; key <= ebiten.KeyMax; key++ {
 		action := keymap.Action(fmt.Sprintf("key%d", key))
 		m.keymap[remapLayer].KeyMouse.Set(button.FromKey(key), action)
 	}
@@ -301,8 +304,10 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.bg.Draw(dst, cam)
 	m.p.draw(dst, cam)
 
-	// ebitenutil.DrawRect(dst, 100, 150, 100, 100, color.NRGBA{100, 100, 100, 50})
-	m.menu.Draw(dst, geo.RectXYWH(100, 150, 100, 100))
+	x, y := 120.0, 120.0
+	height := 120.0
+	ebitenutil.DrawRect(dst, x, y, buttonWidth, height, color.NRGBA{100, 100, 100, 50})
+	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
 }
 
 func (m *mainMenuState) leftMouseHandler(down bool) bool {
