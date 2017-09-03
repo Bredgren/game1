@@ -54,25 +54,16 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 
 	m.btns = []*ui.Button{
 		&ui.Button{
-			IdleImg:  idleImg,
-			HoverImg: hoverImg,
-			IdleAnchor: ui.Anchor{
-				Src: geo.VecXY(0.5, 0.5),
-				Dst: geo.VecXY(0.5, 0.5),
-			},
-			HoverAnchor: ui.Anchor{
-				Src: geo.VecXY(0.5, 0.5),
-				Dst: geo.VecXY(0.5, 0.5),
-			},
+			IdleImg:     idleImg,
+			HoverImg:    hoverImg,
+			IdleAnchor:  ui.AnchorCenter,
+			HoverAnchor: ui.AnchorCenter,
 			Element: &ui.Text{
-				Anchor: ui.Anchor{
-					Src: geo.VecXY(0.5, 0.5),
-					Dst: geo.VecXY(0.5, 0.5),
-				},
-				Text:  "btn",
-				Color: color.Black,
-				Face:  basicfont.Face7x13,
-				Wt:    1,
+				Anchor: ui.AnchorCenter,
+				Text:   "btn",
+				Color:  color.Black,
+				Face:   basicfont.Face7x13,
+				Wt:     1,
 			},
 			Wt: 1,
 			OnClick: func() {
@@ -80,25 +71,16 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 			},
 		},
 		&ui.Button{
-			IdleImg:  idleImg,
-			HoverImg: hoverImg,
-			IdleAnchor: ui.Anchor{
-				Src: geo.VecXY(0.5, 0.5),
-				Dst: geo.VecXY(0.5, 0.5),
-			},
-			HoverAnchor: ui.Anchor{
-				Src: geo.VecXY(0.5, 0.5),
-				Dst: geo.VecXY(0.5, 0.5),
-			},
+			IdleImg:     idleImg,
+			HoverImg:    hoverImg,
+			IdleAnchor:  ui.AnchorCenter,
+			HoverAnchor: ui.AnchorCenter,
 			Element: &ui.Text{
-				Anchor: ui.Anchor{
-					Src: geo.VecXY(0.5, 0.5),
-					Dst: geo.VecXY(0.5, 0.5),
-				},
-				Text:  "btn2",
-				Color: color.Black,
-				Face:  basicfont.Face7x13,
-				Wt:    1,
+				Anchor: ui.AnchorCenter,
+				Text:   "btn2",
+				Color:  color.Black,
+				Face:   basicfont.Face7x13,
+				Wt:     1,
 			},
 			Wt: 1,
 			OnClick: func() {
@@ -114,15 +96,11 @@ func newMainMenu(p *player, screenHeight int, cam *camera.Camera, bg *background
 				Wt: 1,
 				Elements: []ui.WeightedDrawer{
 					&ui.Text{
-						Anchor: ui.Anchor{
-							Src:    geo.VecXY(0.5, 0.5),
-							Dst:    geo.VecXY(0.5, 0.5),
-							Offset: geo.VecXY(0, 0),
-						},
-						Text:  "text1",
-						Color: color.Black,
-						Face:  basicfont.Face7x13,
-						Wt:    1,
+						Anchor: ui.AnchorCenter,
+						Text:   "text1",
+						Color:  color.Black,
+						Face:   basicfont.Face7x13,
+						Wt:     1,
 					},
 					m.btns[0],
 					m.btns[1],

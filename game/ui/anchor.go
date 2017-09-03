@@ -33,3 +33,16 @@ func (a Anchor) TopLeft(srcBounds, dstBounds geo.Rect) geo.Vec {
 
 	return dstAnchor.Minus(srcAnchor).Plus(a.Offset)
 }
+
+// AnchorCenter is a predefined anchor that centers the element in both directions.
+var AnchorCenter = Anchor{
+	Src: geo.VecXY(0.5, 0.5),
+	Dst: geo.VecXY(0.5, 0.5),
+}
+
+// AnchorLeft aligns the left edges of the source and destination elements, and vertically
+// centers it.
+var AnchorLeft = Anchor{
+	Src: geo.VecXY(0, 0.5),
+	Dst: geo.VecXY(0, 0.5),
+}
