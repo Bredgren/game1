@@ -154,6 +154,45 @@ func (m *mainMenuState) setupMenu() {
 		elements = append(elements, m.btns[action])
 	}
 
+	actions = []keymap.Action{
+		pause, fullscreen,
+	}
+	for _, action := range actions {
+		action := action // For use in callbacks
+		b1, _ := m.keymap[generalLayer].KeyMouse.GetButton(action)
+		b2, _ := m.keymap[generalLayer].GamepadBtn.GetButton(action)
+		elements = append(elements, &ui.HorizontalContainer{
+			Wt: 1,
+			Elements: []ui.WeightedDrawer{
+				&ui.Text{
+					Text: string(action),
+					Anchor: ui.Anchor{
+						Src:    geo.VecXY(0, 0.5),
+						Dst:    geo.VecXY(0, 0.5),
+						Offset: geo.VecXY(5, 0),
+					},
+					Color: color.Black,
+					Face:  basicfont.Face7x13,
+					Wt:    1.6,
+				},
+				&ui.Text{
+					Text:   b1.String(),
+					Anchor: ui.AnchorLeft,
+					Color:  color.Black,
+					Face:   basicfont.Face7x13,
+					Wt:     1,
+				},
+				&ui.Text{
+					Text:   fmt.Sprintf("Gamepad %d", b2),
+					Anchor: ui.AnchorLeft,
+					Color:  color.Black,
+					Face:   basicfont.Face7x13,
+					Wt:     1,
+				},
+			},
+		})
+	}
+
 	m.menu = &ui.VerticalContainer{
 		Wt:       1,
 		Elements: elements,
@@ -426,11 +465,11 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 	m.p.draw(dst, cam)
 
 	x, y := 120.0, 20.0
-	height := 220.0
+	height := 263.0
 	m.menu.Draw(dst, geo.RectXYWH(x, y, buttonWidth, height))
 
 	if m.remapAxis {
-		height = 110
+		height = 106
 		x, y = x+buttonWidth+10, y+50
 		m.axisMenu.Draw(dst, geo.RectXYWH(x, y, axisButtonWidth, height))
 	}
