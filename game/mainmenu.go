@@ -13,6 +13,7 @@ import (
 	"github.com/Bredgren/game1/game/ui"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/text"
 )
 
 const (
@@ -505,6 +506,8 @@ func (m *mainMenuState) draw(dst *ebiten.Image, cam *camera.Camera) {
 		x, y = x+buttonWidth+10, y+50
 		m.axisMenu.Draw(dst, geo.RectXYWH(x, y, axisButtonWidth, height))
 	}
+
+	text.Draw(dst, "<-   Move off screen to begin   ->", basicfont.Face7x13, 185, m.screenHeight-20, color.White)
 }
 
 func (m *mainMenuState) leftMouseHandler(down bool) bool {
