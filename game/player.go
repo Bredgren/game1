@@ -56,6 +56,15 @@ func (p *player) update(dt time.Duration) {
 		}
 	}
 
+	p.vel.X = p.Move * playerMoveSpeed
+
+	// Check if it's time to jump before handling jump the jump state so that we start
+	// jumping as soon as possible
+	if !p.isJumping && p.Jump && p.canJump {
+		p.isJumping = true
+		p.jumpTime = playerJumpTime
+	}
+
 	if p.isJumping {
 		if p.jumpTime <= 0 || !p.Jump {
 			p.isJumping = false
@@ -65,13 +74,7 @@ func (p *player) update(dt time.Duration) {
 		}
 	} else {
 		p.vel.Y += playerGravity
-		if p.Jump && p.canJump {
-			p.isJumping = true
-			p.jumpTime = playerJumpTime
-		}
 	}
-
-	p.vel.X = p.Move * playerMoveSpeed
 
 	p.pos.Add(p.vel.Times(dt.Seconds()))
 
