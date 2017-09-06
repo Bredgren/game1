@@ -2,10 +2,12 @@ package asset
 
 import (
 	"bytes"
+	"encoding/json"
 	"image"
 	"log"
 	"path/filepath"
 
+	"github.com/Bredgren/game1/game/sprite"
 	"github.com/hajimehoshi/ebiten"
 
 	// For decoding png assets
@@ -13,10 +15,17 @@ import (
 )
 
 var img = map[string]*ebiten.Image{}
+var sheetDesc = map[string]sprite.SheetDesc{}
 
 const root = "assets"
 
 func init() {
+	log.Println("init")
+	initImg()
+	initSheetDesc()
+}
+
+func initImg() {
 	names, err := AssetDir(filepath.Join(root, "img"))
 	if err != nil {
 		log.Fatalf("Reading image assets: %s", err)
@@ -44,4 +53,34 @@ func Img(name string) *ebiten.Image {
 		log.Fatalf("No image %s", name)
 	}
 	return i
+}
+
+func initSheetDesc() {
+	names, err := AssetDir(filepath.Join(root, "sheetDesc"))
+	if err != nil {
+		log.Fatalf("Reading sheet desc assets: %s", err)
+	}
+	for _, descName := range names {
+		r := MustAsset(filepath.Join(root, "sheetDesc", descName))
+		var s sprite.SheetDesc
+		err := json.Unmarshal(r, &s)
+		if err != nil {
+			log.Fatalf("Loading descName %s: %s", descName, err)
+		}
+
+		extension := filepath.Ext(descName)
+		name := descName[0 : len(descName)-len(extension)]
+		sheetDesc[name] = s
+
+		log.Printf("%#v", s)
+	}
+}
+
+// SheetDesc retrieves an a sprite sheet description by filename (minus extension).
+func SheetDesc(name string) sprite.SheetDesc {
+	s, ok := sheetDesc[name]
+	if !ok {
+		log.Fatalf("No sheetDesc %s", name)
+	}
+	return s
 }
