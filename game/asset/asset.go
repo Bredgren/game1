@@ -20,7 +20,6 @@ var sheetDesc = map[string]sprite.SheetDesc{}
 const root = "assets"
 
 func init() {
-	log.Println("init")
 	initImg()
 	initSheetDesc()
 }
@@ -65,14 +64,12 @@ func initSheetDesc() {
 		var s sprite.SheetDesc
 		err := json.Unmarshal(r, &s)
 		if err != nil {
-			log.Fatalf("Loading descName %s: %s", descName, err)
+			log.Fatalf("Loading sheet %s: %s", descName, err)
 		}
 
 		extension := filepath.Ext(descName)
 		name := descName[0 : len(descName)-len(extension)]
 		sheetDesc[name] = s
-
-		log.Printf("%#v", s)
 	}
 }
 
