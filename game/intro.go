@@ -9,18 +9,17 @@ import (
 )
 
 type introState struct {
-	p    *player
-	bg   *background
-	wait time.Duration
+	p  *player
+	bg *background
 }
 
 func newIntroState(p *player, screenHeight int, cam *camera.Camera, bg *background) *introState {
 	p.SetPos(geo.Vec0)
 	cam.Target = fixedCameraTarget{geo.VecXY(0, -float64(screenHeight)*0.4)}
+	p.awaken()
 	return &introState{
-		p:    p,
-		bg:   bg,
-		wait: 3 * time.Second,
+		p:  p,
+		bg: bg,
 	}
 }
 
@@ -33,14 +32,14 @@ func (i *introState) end() {
 }
 
 func (i *introState) nextState() gameStateName {
-	if i.wait <= 0 {
+	if i.p.awoke() {
 		return mainMenu
 	}
 	return intro
 }
 
 func (i *introState) update(dt time.Duration) {
-	i.wait -= dt
+	i.p.update(dt)
 }
 
 func (i *introState) draw(dst *ebiten.Image, cam *camera.Camera) {

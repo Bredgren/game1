@@ -6,9 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Bredgren/game1/game/asset"
 	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/keymap"
 	"github.com/Bredgren/game1/game/keymap/button"
+	"github.com/Bredgren/game1/game/sprite"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
@@ -69,6 +71,8 @@ type Game struct {
 
 // New creates, initializes, and returns a new Game.
 func New(screenWidth, screenHeight int) *Game {
+	sprite.AddSheet(asset.Img("sheet"), asset.SheetDesc("sheet"))
+
 	p := newPlayer()
 
 	cam := camera.New(screenWidth, screenHeight)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Bredgren/game1/game/camera"
+	"github.com/Bredgren/game1/game/sprite"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 )
@@ -30,6 +31,8 @@ type player struct {
 	canJump   bool
 	isJumping bool
 	jumpTime  time.Duration
+
+	awakenSprite sprite.Sprite
 }
 
 func newPlayer() *player {
@@ -39,11 +42,22 @@ func newPlayer() *player {
 		bounds: geo.RectWH(16, 16),
 		img:    img,
 
-		canJump:   true,
-		isJumping: false,
-		jumpTime:  0,
+		canJump:      true,
+		isJumping:    false,
+		jumpTime:     0,
+		awakenSprite: sprite.Get("awaken"),
+		// awakenSprite: sprite.Get("idle"),
 	}
+
 	return p
+}
+
+func (p *player) awaken() {
+	p.awakenSprite.Begin(false)
+}
+
+func (p *player) awoke() bool {
+	return p.awakenSprite.Ended()
 }
 
 func (p *player) update(dt time.Duration) {
@@ -90,13 +104,17 @@ func (p *player) update(dt time.Duration) {
 
 	// Reset Move for next frame, it will be set each frame by user input.
 	p.Move = 0
+
+	p.awakenSprite.Update(dt)
 }
 
 func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
-	pos := cam.ScreenCoords(geo.VecXY(p.bounds.TopLeft()))
-	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(pos.XY())
-	dst.DrawImage(p.img, &opts)
+	pos := cam.ScreenCoords(geo.VecXY(p.bounds.BottomMid()))
+	// opts := ebiten.DrawImageOptions{}
+	// opts.GeoM.Translate(pos.XY())
+	// dst.DrawImage(p.img, &opts)
+
+	p.awakenSprite.Draw(dst, pos)
 }
 
 func (p *player) Pos() geo.Vec {
