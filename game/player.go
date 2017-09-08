@@ -17,6 +17,13 @@ const (
 	playerJumpTime  = 500 * time.Millisecond
 )
 
+type playerState int
+
+const (
+	awaken playerState = iota
+	idle
+)
+
 type player struct {
 	pos    geo.Vec
 	vel    geo.Vec
@@ -32,7 +39,11 @@ type player struct {
 	isJumping bool
 	jumpTime  time.Duration
 
-	awakenSprite sprite.Sprite
+	state playerState
+
+	currentSprite *sprite.Sprite
+	awakenSprite  sprite.Sprite
+	idleSprite    sprite.Sprite
 }
 
 func newPlayer() *player {
@@ -42,18 +53,24 @@ func newPlayer() *player {
 		bounds: geo.RectWH(16, 16),
 		img:    img,
 
-		canJump:      true,
-		isJumping:    false,
-		jumpTime:     0,
+		canJump:   true,
+		isJumping: false,
+		jumpTime:  0,
+
+		state:        idle,
 		awakenSprite: sprite.Get("awaken"),
-		// awakenSprite: sprite.Get("idle"),
+		idleSprite:   sprite.Get("idle"),
 	}
+
+	p.currentSprite = &p.idleSprite
 
 	return p
 }
 
 func (p *player) awaken() {
-	p.awakenSprite.Begin(false)
+	p.currentSprite = &p.awakenSprite
+	p.currentSprite.Begin(false)
+	p.state = awaken
 }
 
 func (p *player) awoke() bool {
@@ -61,6 +78,25 @@ func (p *player) awoke() bool {
 }
 
 func (p *player) update(dt time.Duration) {
+	switch p.state {
+	case awaken:
+		if p.awoke() {
+			p.state = idle
+			p.currentSprite = &p.idleSprite
+		}
+	case idle:
+		p.updateMovement(dt)
+	}
+
+	p.currentSprite.Update(dt)
+}
+
+func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
+	pos := cam.ScreenCoords(geo.VecXY(p.bounds.BottomMid()))
+	p.currentSprite.Draw(dst, pos)
+}
+
+func (p *player) updateMovement(dt time.Duration) {
 	if p.Move == 0 { // If gamepad axis isn't being used, check left/right buttons.
 		if p.Left {
 			p.Move = -1
@@ -104,17 +140,6 @@ func (p *player) update(dt time.Duration) {
 
 	// Reset Move for next frame, it will be set each frame by user input.
 	p.Move = 0
-
-	p.awakenSprite.Update(dt)
-}
-
-func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
-	pos := cam.ScreenCoords(geo.VecXY(p.bounds.BottomMid()))
-	// opts := ebiten.DrawImageOptions{}
-	// opts.GeoM.Translate(pos.XY())
-	// dst.DrawImage(p.img, &opts)
-
-	p.awakenSprite.Draw(dst, pos)
 }
 
 func (p *player) Pos() geo.Vec {
