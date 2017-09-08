@@ -71,11 +71,4 @@ func (s *Sprite) Draw(dst *ebiten.Image, pos geo.Vec) {
 	s.frames[s.curFrame].opts.GeoM.Reset()
 	s.frames[s.curFrame].opts.GeoM.Translate(pos.XY())
 	dst.DrawImage(s.src, &s.frames[s.curFrame].opts)
-
-	// log.Printf("f %#v", s.frames[s.curFrame].opts.SourceRect)
-	// opts := ebiten.DrawImageOptions{}
-	// r := image.Rect(8, 8, 16, 16)
-	// opts.SourceRect = &r
-	// opts.GeoM.Translate(pos.XY())
-	// dst.DrawImage(s.src, &opts)
 }
