@@ -134,6 +134,7 @@ func New(screenWidth, screenHeight int) *Game {
 		left:  p.handleLeft,
 		right: p.handleRight,
 		jump:  p.handleJump,
+		punch: p.handlePunch,
 	}
 	playerAxisActions := keymap.AxisHandlerMap{
 		move: p.handleMove,
