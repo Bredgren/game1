@@ -60,8 +60,9 @@ func (s *Sprite) Update(dt time.Duration) {
 }
 
 // Draw draws the spite's current frame to dst at the given position. The anchor position
-// of the current frame will be placed at pos.
-func (s *Sprite) Draw(dst *ebiten.Image, pos geo.Vec) {
+// of the current frame will be placed at pos. The geom parameter can be used to apply
+// extra transformations to the sprite before drawing it.
+func (s *Sprite) Draw(dst *ebiten.Image, pos geo.Vec, geom ebiten.GeoM) {
 	if len(s.frames) == 0 {
 		return
 	}
@@ -69,6 +70,7 @@ func (s *Sprite) Draw(dst *ebiten.Image, pos geo.Vec) {
 	pos.Sub(s.frames[s.curFrame].anchor)
 
 	s.frames[s.curFrame].opts.GeoM.Reset()
+	s.frames[s.curFrame].opts.GeoM.Concat(geom)
 	s.frames[s.curFrame].opts.GeoM.Translate(pos.XY())
 	dst.DrawImage(s.src, &s.frames[s.curFrame].opts)
 }

@@ -93,7 +93,7 @@ func (p *player) update(dt time.Duration) {
 
 func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 	pos := cam.ScreenCoords(geo.VecXY(p.bounds.BottomMid()))
-	p.currentSprite.Draw(dst, pos)
+	p.currentSprite.Draw(dst, pos, ebiten.GeoM{})
 }
 
 func (p *player) updateMovement(dt time.Duration) {
