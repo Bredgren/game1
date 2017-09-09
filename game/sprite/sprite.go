@@ -74,3 +74,8 @@ func (s *Sprite) Draw(dst *ebiten.Image, pos geo.Vec, geom ebiten.GeoM) {
 	s.frames[s.curFrame].opts.GeoM.Translate(pos.XY())
 	dst.DrawImage(s.src, &s.frames[s.curFrame].opts)
 }
+
+// Size returns the width and height of the current frame as a vector.
+func (s *Sprite) Size() geo.Vec {
+	return geo.VecPoint(s.frames[s.curFrame].opts.SourceRect.Size())
+}

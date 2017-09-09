@@ -1,7 +1,6 @@
 package game
 
 import (
-	"image/color"
 	"time"
 
 	"github.com/Bredgren/game1/game/camera"
@@ -22,13 +21,12 @@ type playerState int
 const (
 	awaken playerState = iota
 	idle
+	playerMove
 )
 
 type player struct {
-	pos    geo.Vec
-	vel    geo.Vec
-	bounds geo.Rect
-	img    *ebiten.Image
+	pos geo.Vec
+	vel geo.Vec
 
 	Left  bool    // Move left button is down
 	Right bool    // Move right button is down
@@ -38,21 +36,18 @@ type player struct {
 	canJump   bool
 	isJumping bool
 	jumpTime  time.Duration
+	flipDir   bool
 
 	state playerState
 
 	currentSprite *sprite.Sprite
 	awakenSprite  sprite.Sprite
 	idleSprite    sprite.Sprite
+	moveSprite    sprite.Sprite
 }
 
 func newPlayer() *player {
-	img, _ := ebiten.NewImage(16, 16, ebiten.FilterNearest)
-	img.Fill(color.Black)
 	p := &player{
-		bounds: geo.RectWH(16, 16),
-		img:    img,
-
 		canJump:   true,
 		isJumping: false,
 		jumpTime:  0,
@@ -60,6 +55,7 @@ func newPlayer() *player {
 		state:        idle,
 		awakenSprite: sprite.Get("awaken"),
 		idleSprite:   sprite.Get("idle"),
+		moveSprite:   sprite.Get("move"),
 	}
 
 	p.currentSprite = &p.idleSprite
@@ -85,18 +81,46 @@ func (p *player) update(dt time.Duration) {
 			p.currentSprite = &p.idleSprite
 		}
 	case idle:
+		p.updateMove()
+		if p.Move != 0 {
+			p.state = playerMove
+			p.currentSprite = &p.moveSprite
+		}
+	case playerMove:
+		p.updateMove()
+		if p.Move == 0 {
+			p.state = idle
+			p.currentSprite = &p.idleSprite
+		}
+	}
+
+	switch p.state {
+	case awaken:
+	case idle:
+		p.updateMovement(dt)
+	case playerMove:
 		p.updateMovement(dt)
 	}
 
 	p.currentSprite.Update(dt)
+
+	p.flipDir = p.Move < 0
+	// Reset Move for next frame, it will be set each frame by user input.
+	p.Move = 0
 }
 
 func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
-	pos := cam.ScreenCoords(geo.VecXY(p.bounds.BottomMid()))
-	p.currentSprite.Draw(dst, pos, ebiten.GeoM{})
+	pos := cam.ScreenCoords(p.pos)
+	geom := ebiten.GeoM{}
+	if p.flipDir {
+		geom.Scale(-1, 1)
+		size := p.currentSprite.Size()
+		geom.Translate(size.X, 0)
+	}
+	p.currentSprite.Draw(dst, pos, geom)
 }
 
-func (p *player) updateMovement(dt time.Duration) {
+func (p *player) updateMove() {
 	if p.Move == 0 { // If gamepad axis isn't being used, check left/right buttons.
 		if p.Left {
 			p.Move = -1
@@ -105,7 +129,9 @@ func (p *player) updateMovement(dt time.Duration) {
 			p.Move = 1
 		}
 	}
+}
 
+func (p *player) updateMovement(dt time.Duration) {
 	p.vel.X = p.Move * playerMoveSpeed
 
 	// Check if it's time to jump before handling jump the jump state so that we start
@@ -135,11 +161,6 @@ func (p *player) updateMovement(dt time.Duration) {
 	} else {
 		p.canJump = false
 	}
-
-	p.bounds.SetBottomMid(p.pos.XY())
-
-	// Reset Move for next frame, it will be set each frame by user input.
-	p.Move = 0
 }
 
 func (p *player) Pos() geo.Vec {
@@ -148,7 +169,6 @@ func (p *player) Pos() geo.Vec {
 
 func (p *player) SetPos(pos geo.Vec) {
 	p.pos = pos
-	p.bounds.SetBottomMid(p.pos.XY())
 }
 
 func (p *player) handleLeft(down bool) bool {
