@@ -83,6 +83,11 @@ func (p *player) awoke() bool {
 	return p.awakenSprite.Ended()
 }
 
+func (p *player) idle() {
+	p.state = idle
+	p.currentSprite = &p.idleSprite
+}
+
 func (p *player) update(dt time.Duration) {
 	p.punchGap -= dt
 
@@ -106,8 +111,7 @@ func (p *player) update(dt time.Duration) {
 	case playerMove:
 		p.updateMove()
 		if p.move == 0 {
-			p.state = idle
-			p.currentSprite = &p.idleSprite
+			p.idle()
 		}
 		if p.punch && p.punchGap <= 0 {
 			p.punch = false
@@ -124,8 +128,7 @@ func (p *player) update(dt time.Duration) {
 				p.state = playerMove
 				p.currentSprite = &p.moveSprite
 			} else {
-				p.state = idle
-				p.currentSprite = &p.idleSprite
+				p.idle()
 			}
 		}
 	}
@@ -158,7 +161,7 @@ func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 	case awaken:
 	case idle:
 	case playerMove:
-		p.flipDir = p.move < 0
+		p.flipDir = p.vel.X < 0
 	case playerPunch:
 		mPos := geo.VecXYi(ebiten.CursorPosition())
 		p.flipDir = mPos.X < pos.X
