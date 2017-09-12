@@ -137,7 +137,9 @@ func New(screenWidth, screenHeight int) *Game {
 		punch: p.handlePunch,
 	}
 	playerAxisActions := keymap.AxisHandlerMap{
-		move: p.handleMove,
+		move:   p.handleMove,
+		punchH: p.handlePunchH,
+		punchV: p.handlePunchV,
 	}
 	g.keymap[playerLayer] = keymap.New(playerActions, playerAxisActions)
 	setDefaultKeyMap(g.keymap[playerLayer])

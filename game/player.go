@@ -32,11 +32,13 @@ type player struct {
 	pos geo.Vec
 	vel geo.Vec
 
-	left  bool    // Move left button is down
-	right bool    // Move right button is down
-	move  float64 // Gampad axis for movement
-	jump  bool    // Jump button is down
-	punch bool    // Punch button is down
+	left             bool    // Move left button is down
+	right            bool    // Move right button is down
+	move             float64 // Gampad axis for movement
+	jump             bool    // Jump button is down
+	punch            bool    // Punch button is down
+	punchAxis        geo.Vec
+	punchWithGamepad bool
 
 	canJump   bool
 	isJumping bool
@@ -83,9 +85,21 @@ func (p *player) awoke() bool {
 	return p.awakenSprite.Ended()
 }
 
-func (p *player) idle() {
+func (p *player) doIdle() {
 	p.state = idle
 	p.currentSprite = &p.idleSprite
+}
+
+func (p *player) shouldStartPunch() bool {
+	p.punchWithGamepad = p.punchAxis.Len2() > 0.25
+	return p.punchGap <= 0 && (p.punch || p.punchWithGamepad)
+}
+
+func (p *player) doPunch() {
+	p.punch = false
+	p.state = playerPunch
+	p.currentSprite = &p.punchSprite
+	p.punchTime = playerPunchTime
 }
 
 func (p *player) update(dt time.Duration) {
@@ -94,8 +108,7 @@ func (p *player) update(dt time.Duration) {
 	switch p.state {
 	case awaken:
 		if p.awoke() {
-			p.state = idle
-			p.currentSprite = &p.idleSprite
+			p.doIdle()
 		}
 	case idle:
 		p.updateMove()
@@ -103,21 +116,16 @@ func (p *player) update(dt time.Duration) {
 			p.state = playerMove
 			p.currentSprite = &p.moveSprite
 		}
-		if p.punch && p.punchGap <= 0 {
-			p.state = playerPunch
-			p.currentSprite = &p.punchSprite
-			p.punchTime = playerPunchTime
+		if p.shouldStartPunch() {
+			p.doPunch()
 		}
 	case playerMove:
 		p.updateMove()
 		if p.move == 0 {
-			p.idle()
+			p.doIdle()
 		}
-		if p.punch && p.punchGap <= 0 {
-			p.punch = false
-			p.state = playerPunch
-			p.currentSprite = &p.punchSprite
-			p.punchTime = playerPunchTime
+		if p.shouldStartPunch() {
+			p.doPunch()
 		}
 	case playerPunch:
 		p.updateMove()
@@ -128,7 +136,7 @@ func (p *player) update(dt time.Duration) {
 				p.state = playerMove
 				p.currentSprite = &p.moveSprite
 			} else {
-				p.idle()
+				p.doIdle()
 			}
 		}
 	}
@@ -164,8 +172,13 @@ func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 		p.flipDir = p.vel.X < 0
 	case playerPunch:
 		mPos := geo.VecXYi(ebiten.CursorPosition())
-		p.flipDir = mPos.X < pos.X
 		pos = geo.VecXY(bounds.Mid())
+
+		if p.punchWithGamepad {
+			mPos = pos.Plus(p.punchAxis)
+		}
+
+		p.flipDir = mPos.X < pos.X
 		angle := mPos.Minus(pos).Angle()
 		if p.flipDir {
 			angle += math.Pi
@@ -258,3 +271,21 @@ func (p *player) handlePunch(down bool) bool {
 	p.punch = down
 	return false
 }
+
+func (p *player) handlePunchH(val float64) bool {
+	p.punchAxis.X = val
+	// p.handlePunchAxis()
+	return false
+}
+
+func (p *player) handlePunchV(val float64) bool {
+	p.punchAxis.Y = -val
+	// p.handlePunchAxis()
+	return false
+}
+
+// func (p *player) handlePunchAxis() {
+// 	if p.punchAxis.Len2() > 0.25 {
+// 		p.punch =
+// 	}
+// }
