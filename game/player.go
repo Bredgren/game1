@@ -90,6 +90,11 @@ func (p *player) doIdle() {
 	p.currentSprite = &p.idleSprite
 }
 
+func (p *player) doMove() {
+	p.state = playerMove
+	p.currentSprite = &p.moveSprite
+}
+
 func (p *player) shouldStartPunch() bool {
 	p.punchWithGamepad = p.punchAxis.Len2() > 0.25
 	return p.punchGap <= 0 && (p.punch || p.punchWithGamepad)
@@ -113,8 +118,7 @@ func (p *player) update(dt time.Duration) {
 	case idle:
 		p.updateMove()
 		if p.move != 0 {
-			p.state = playerMove
-			p.currentSprite = &p.moveSprite
+			p.doMove()
 		}
 		if p.shouldStartPunch() {
 			p.doPunch()
@@ -133,8 +137,7 @@ func (p *player) update(dt time.Duration) {
 		if p.punchTime <= 0 {
 			p.punchGap = playerPunchGap
 			if p.move == 0 {
-				p.state = playerMove
-				p.currentSprite = &p.moveSprite
+				p.doMove()
 			} else {
 				p.doIdle()
 			}
