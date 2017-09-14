@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"log"
 	"time"
 
 	"github.com/Bredgren/geo"
@@ -81,8 +80,6 @@ func AddSheet(img *ebiten.Image, layout SheetDesc) error {
 		}
 
 		sprites[spriteName] = s
-
-		log.Printf("s: %#v", s)
 	}
 	return nil
 }
