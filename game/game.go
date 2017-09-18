@@ -82,12 +82,12 @@ func New(screenWidth, screenHeight int) *Game {
 	// cam.MaxSpeed = 600
 	// cam.Ease = geo.EaseInExpo
 
-	p := newPlayer(cam)
-
 	cam.Shaker.Amplitude = 30
 	cam.Shaker.Duration = 1 * time.Second
 	cam.Shaker.Frequency = 10
 	cam.Shaker.Falloff = geo.EaseOutQuad
+
+	p := newPlayer(cam)
 
 	bg := newBackground()
 

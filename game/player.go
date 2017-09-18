@@ -185,6 +185,8 @@ func (p *player) update(dt time.Duration) {
 }
 
 func (p *player) updateHitboxes() {
+	// Since the player is being updated before the camera this will be off by a frame.
+	// I don't think it will be noticeable though.
 	mousePos := p.cam.WorldCoords(geo.VecXYi(ebiten.CursorPosition()))
 
 	centerY := p.currentSprite.Size().Y / 2
