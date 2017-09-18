@@ -1,6 +1,8 @@
 package game
 
 import (
+	"image/color"
+	"log"
 	"math"
 	"time"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/Bredgren/game1/game/sprite"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
 const (
@@ -29,6 +32,7 @@ const (
 )
 
 type player struct {
+	cam *camera.Camera
 	pos geo.Vec
 	vel geo.Vec
 
@@ -55,10 +59,14 @@ type player struct {
 	idleSprite    sprite.Sprite
 	moveSprite    sprite.Sprite
 	punchSprite   sprite.Sprite
+
+	coreHitbox   hitbox
+	attackHitbox hitbox
 }
 
-func newPlayer() *player {
+func newPlayer(cam *camera.Camera) *player {
 	p := &player{
+		cam:       cam,
 		canJump:   true,
 		isJumping: false,
 		jumpTime:  0,
@@ -71,6 +79,20 @@ func newPlayer() *player {
 	}
 
 	p.currentSprite = &p.idleSprite
+
+	p.coreHitbox = hitbox{
+		Label:    "PlayerCore",
+		Bounds:   geo.RectWH(2, 2),
+		Callback: p.coreHit,
+		Active:   true,
+		Owner:    &p,
+	}
+
+	p.attackHitbox = hitbox{
+		Label:    "PlayerAttack",
+		Callback: p.attackHit,
+		Owner:    &p,
+	}
 
 	return p
 }
@@ -154,10 +176,30 @@ func (p *player) update(dt time.Duration) {
 		p.updateMovement(dt)
 	}
 
+	p.updateHitboxes()
+
 	p.currentSprite.Update(dt)
 
 	// Reset Move for next frame, it will be set each frame by user input.
 	p.move = 0
+}
+
+func (p *player) updateHitboxes() {
+	mousePos := p.cam.WorldCoords(geo.VecXYi(ebiten.CursorPosition()))
+
+	centerY := p.currentSprite.Size().Y / 2
+	switch p.state {
+	case awaken, idle, playerMove:
+		p.attackHitbox.Active = false
+	case playerPunch:
+		p.attackHitbox.Active = true
+		p.attackHitbox.Bounds.SetSize(8, 8)
+		center := p.pos.Plus(geo.VecXY(0, -centerY))
+		toMouse := mousePos.Minus(center).WithLen(9)
+		p.attackHitbox.Bounds.SetMid(center.Plus(toMouse).XY())
+	}
+
+	p.coreHitbox.Bounds.SetTopLeft(p.pos.Plus(geo.VecXY(0, -centerY)).XY())
 }
 
 func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
@@ -197,6 +239,18 @@ func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 		geom.Translate(size.X, 0)
 	}
 	p.currentSprite.Draw(dst, pos, geom)
+
+	// debug draw hitboxes
+	if p.attackHitbox.Active {
+		x, y := cam.ScreenCoords(geo.VecXY(p.attackHitbox.Bounds.TopLeft())).XY()
+		w, h := p.attackHitbox.Bounds.Size()
+		ebitenutil.DrawRect(dst, x, y, w, h, color.RGBA{0xFF, 0x00, 0x00, 0x88})
+	}
+	// if p.coreHitbox.Active {
+	// 	x, y := cam.ScreenCoords(geo.VecXY(p.coreHitbox.Bounds.TopLeft())).XY()
+	// 	w, h := p.coreHitbox.Bounds.Size()
+	// 	ebitenutil.DrawRect(dst, x, y, w, h, color.RGBA{0x00, 0xFF, 0x00, 0x88})
+	// }
 }
 
 func (p *player) updateMove() {
@@ -277,18 +331,22 @@ func (p *player) handlePunch(down bool) bool {
 
 func (p *player) handlePunchH(val float64) bool {
 	p.punchAxis.X = val
-	// p.handlePunchAxis()
 	return false
 }
 
 func (p *player) handlePunchV(val float64) bool {
 	p.punchAxis.Y = -val
-	// p.handlePunchAxis()
 	return false
 }
 
-// func (p *player) handlePunchAxis() {
-// 	if p.punchAxis.Len2() > 0.25 {
-// 		p.punch =
-// 	}
-// }
+func (p *player) hitboxes() []*hitbox {
+	return []*hitbox{&p.coreHitbox, &p.attackHitbox}
+}
+
+func (p *player) coreHit(other *hitbox) {
+	log.Println("coreHit:", other.Label)
+}
+
+func (p *player) attackHit(other *hitbox) {
+	log.Println("attackHit:", other.Label)
+}

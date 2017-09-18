@@ -73,8 +73,6 @@ type Game struct {
 func New(screenWidth, screenHeight int) *Game {
 	sprite.AddSheet(asset.Img("sheet"), asset.SheetDesc("sheet"))
 
-	p := newPlayer()
-
 	cam := camera.New(screenWidth, screenHeight)
 	// cam.MaxDist = 100
 	// cam.MaxSpeed = 600
@@ -83,6 +81,8 @@ func New(screenWidth, screenHeight int) *Game {
 	// cam.MaxDist = 80
 	// cam.MaxSpeed = 600
 	// cam.Ease = geo.EaseInExpo
+
+	p := newPlayer(cam)
 
 	cam.Shaker.Amplitude = 30
 	cam.Shaker.Duration = 1 * time.Second
