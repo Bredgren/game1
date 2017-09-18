@@ -197,7 +197,11 @@ func (p *player) updateHitboxes() {
 		p.attackHitbox.Active = true
 		p.attackHitbox.Bounds.SetSize(8, 8)
 		center := p.pos.Plus(geo.VecXY(0, -centerY))
-		toMouse := mousePos.Minus(center).WithLen(9)
+		toMouse := mousePos.Minus(center)
+		if p.punchWithGamepad {
+			toMouse = p.punchAxis
+		}
+		toMouse.SetLen(9)
 		p.attackHitbox.Bounds.SetMid(center.Plus(toMouse).XY())
 	}
 
@@ -351,4 +355,13 @@ func (p *player) coreHit(other *hitbox) {
 
 func (p *player) attackHit(other *hitbox) {
 	log.Println("attackHit:", other.Label)
+	switch other.Label {
+	case "ground":
+		p.vel.Y = -125
+		p.cam.Shaker.Amplitude = 10
+		p.cam.Shaker.Duration = 500 * time.Millisecond
+		p.cam.Shaker.Frequency = 5
+		p.cam.Shaker.Falloff = geo.EaseOutQuad
+		p.cam.StartShake()
+	}
 }

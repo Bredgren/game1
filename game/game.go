@@ -63,6 +63,8 @@ type Game struct {
 
 	player *player
 
+	groundHB hitbox
+
 	// Fields only for debugging
 	lastUpdateTime time.Duration
 	lastDrawTime   time.Duration
@@ -101,6 +103,11 @@ func New(screenWidth, screenHeight int) *Game {
 		keymap: make(keymap.Layers, numInputLayers),
 
 		player: p,
+
+		groundHB: hitbox{
+			Label:  "ground",
+			Active: true,
+		},
 	}
 
 	generalActions := keymap.ButtonHandlerMap{
@@ -190,6 +197,8 @@ func (g *Game) Update() {
 
 	g.camera.Update(dt)
 
+	g.handleCollisions()
+
 	if g.showDebugInfo {
 		updateTime := time.Since(updateStart)
 		if time.Since(g.lastTimeSample) > time.Second || updateTime > g.lastUpdateTime {
@@ -245,4 +254,15 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 		fmt.Sprintf("Time Scale: %0.2f", g.timeScale),
 	}
 	ebitenutil.DebugPrint(dst, strings.Join(info, "\n"))
+}
+
+func (g *Game) handleCollisions() {
+	for _, box := range g.player.hitboxes() {
+		if !box.Active {
+			continue
+		}
+		if box.Bounds.Bottom() > 0 {
+			box.Callback(&g.groundHB)
+		}
+	}
 }
