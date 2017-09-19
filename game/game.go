@@ -138,10 +138,11 @@ func New(screenWidth, screenHeight int) *Game {
 	g.keymap[generalLayer].GamepadBtn.Set(ebiten.GamepadButton6, fullscreen)
 
 	playerActions := keymap.ButtonHandlerMap{
-		left:  p.handleLeft,
-		right: p.handleRight,
-		jump:  p.handleJump,
-		punch: p.handlePunch,
+		left:   p.handleLeft,
+		right:  p.handleRight,
+		jump:   p.handleJump,
+		punch:  p.handlePunch,
+		launch: p.handleLaunch,
 	}
 	playerAxisActions := keymap.AxisHandlerMap{
 		move:   p.handleMove,

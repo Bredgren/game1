@@ -29,6 +29,8 @@ const (
 	idle
 	playerMove
 	playerPunch
+	charge
+	playerLaunch
 )
 
 type player struct {
@@ -43,6 +45,7 @@ type player struct {
 	punch            bool    // Punch button is down
 	punchAxis        geo.Vec
 	punchWithGamepad bool
+	launch           bool // Launch button is down
 
 	canJump   bool
 	isJumping bool
@@ -59,6 +62,8 @@ type player struct {
 	idleSprite    sprite.Sprite
 	moveSprite    sprite.Sprite
 	punchSprite   sprite.Sprite
+	chargeSprite  sprite.Sprite
+	launchSprite  sprite.Sprite
 
 	coreHitbox   hitbox
 	attackHitbox hitbox
@@ -76,6 +81,8 @@ func newPlayer(cam *camera.Camera) *player {
 		idleSprite:   sprite.Get("idle"),
 		moveSprite:   sprite.Get("move"),
 		punchSprite:  sprite.Get("punch"),
+		chargeSprite: sprite.Get("charge"),
+		launchSprite: sprite.Get("launch"),
 	}
 
 	p.currentSprite = &p.idleSprite
@@ -129,6 +136,16 @@ func (p *player) doPunch() {
 	p.punchTime = playerPunchTime
 }
 
+func (p *player) doStartLaunch() {
+	p.state = charge
+	p.currentSprite = &p.chargeSprite
+}
+
+func (p *player) doLaunch() {
+	p.state = playerLaunch
+	p.currentSprite = &p.launchSprite
+}
+
 func (p *player) update(dt time.Duration) {
 	p.punchGap -= dt
 
@@ -145,6 +162,9 @@ func (p *player) update(dt time.Duration) {
 		if p.shouldStartPunch() {
 			p.doPunch()
 		}
+		if p.launch {
+			p.doStartLaunch()
+		}
 	case playerMove:
 		p.updateMove()
 		if p.move == 0 {
@@ -152,6 +172,9 @@ func (p *player) update(dt time.Duration) {
 		}
 		if p.shouldStartPunch() {
 			p.doPunch()
+		}
+		if p.launch {
+			p.doStartLaunch()
 		}
 	case playerPunch:
 		p.updateMove()
@@ -164,6 +187,12 @@ func (p *player) update(dt time.Duration) {
 				p.doIdle()
 			}
 		}
+	case charge:
+		if !p.launch {
+			p.doLaunch()
+		}
+	case playerLaunch:
+		p.doIdle()
 	}
 
 	switch p.state {
@@ -174,6 +203,8 @@ func (p *player) update(dt time.Duration) {
 		p.updateMovement(dt)
 	case playerPunch:
 		p.updateMovement(dt)
+	case charge:
+	case playerLaunch:
 	}
 
 	p.updateHitboxes()
@@ -203,6 +234,10 @@ func (p *player) updateHitboxes() {
 		}
 		toMouse.SetLen(9)
 		p.attackHitbox.Bounds.SetMid(center.Plus(toMouse).XY())
+	case charge:
+
+	case playerLaunch:
+
 	}
 
 	p.coreHitbox.Bounds.SetTopLeft(p.pos.Plus(geo.VecXY(0, -centerY)).XY())
@@ -238,6 +273,10 @@ func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 		geom.Translate(-size.X/2, -size.Y/2)
 		geom.Rotate(-angle)
 		geom.Translate(size.X/2, size.Y/2)
+	case charge:
+
+	case playerLaunch:
+
 	}
 
 	if p.flipDir {
@@ -342,6 +381,11 @@ func (p *player) handlePunchH(val float64) bool {
 
 func (p *player) handlePunchV(val float64) bool {
 	p.punchAxis.Y = -val
+	return false
+}
+
+func (p *player) handleLaunch(down bool) bool {
+	p.launch = down
 	return false
 }
 
