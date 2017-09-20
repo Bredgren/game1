@@ -274,7 +274,17 @@ func (p *player) draw(dst *ebiten.Image, cam *camera.Camera) {
 		geom.Rotate(-angle)
 		geom.Translate(size.X/2, size.Y/2)
 	case charge:
+		mPos := geo.VecXYi(ebiten.CursorPosition())
+		if p.punchAxis.Len() != 0 {
+			mPos = pos.Plus(p.punchAxis)
+		}
 
+		p.flipDir = false
+		angle := mPos.Minus(pos).AngleFrom(geo.VecXY(0, -1))
+
+		geom.Translate(-size.X/2, -size.Y)
+		geom.Rotate(-angle)
+		geom.Translate(size.X/2, size.Y)
 	case playerLaunch:
 
 	}
@@ -398,7 +408,7 @@ func (p *player) coreHit(other *hitbox) {
 }
 
 func (p *player) attackHit(other *hitbox) {
-	log.Println("attackHit:", other.Label)
+	// log.Println("attackHit:", other.Label)
 	switch other.Label {
 	case "ground":
 		p.vel.Y = -125
