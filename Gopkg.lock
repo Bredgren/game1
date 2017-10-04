@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/go-gl/gl"
   packages = ["v2.1/gl"]
-  revision = "39ef8e959f4050148ec5a59816a93b9e65b4528f"
+  revision = "ac0d3d2af0fe995e2bb09fa6619b716b0c0fc0fa"
 
 [[projects]]
   branch = "master"
@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/gopherjs/gopherjs"
   packages = ["js","nosync"]
-  revision = "95deb33d587c9f6e24b494ea9bdf9648c48f9a60"
+  revision = "415225646bb92c4449bb484646f2c95a98402f6f"
 
 [[projects]]
   branch = "master"
@@ -34,24 +34,35 @@
 [[projects]]
   branch = "master"
   name = "github.com/hajimehoshi/ebiten"
-  packages = [".","ebitenutil","ebitenutil/internal/assets","internal","internal/affine","internal/clock","internal/endian","internal/graphics","internal/jni","internal/math","internal/opengl","internal/restorable","internal/sync","internal/ui","internal/web"]
-  revision = "6c10251a45d4ea01da9b1d8f89abd06a014c01ab"
+  packages = [".","ebitenutil","ebitenutil/internal/assets","internal","internal/affine","internal/clock","internal/endian","internal/graphics","internal/jni","internal/math","internal/opengl","internal/restorable","internal/sync","internal/ui","internal/web","text"]
+  revision = "b4e3e9375cdd479a8556c4d1d82b46a5c0e35360"
+
+[[projects]]
+  name = "github.com/solovev/gopsd"
+  packages = [".","types","util"]
+  revision = "324149dd34bc90d56963669f7a288d96b7d9ba10"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/image"
+  packages = ["font","font/basicfont","font/plan9font","math/fixed"]
+  revision = "334384d9e19178a0488c9360d94d183c1ef0f711"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/mobile"
   packages = ["gl"]
-  revision = "05f1abc543eeb2d5459b390011389bb8ed93eaf0"
+  revision = "e095d655c7b68388a6d3e926d508f5f3b42b3e71"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["windows"]
-  revision = "2d6f6f883a06fc0d5f4b14a81e4c28705ea64c15"
+  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f95eb02c9ca1c9852761630a13b2aa823d4b6340b41414d15eba35d9f52ed933"
+  inputs-digest = "a48d48ba93b6e298f588fbfecb6b33d804f35a44666cbfd6f86511aa3e416739"
   solver-name = "gps-cdcl"
   solver-version = 1

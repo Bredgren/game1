@@ -7,75 +7,87 @@ import (
 	"github.com/hajimehoshi/ebiten"
 )
 
-var sprites = map[string]Sprite{}
-
-// Get returns the sprite with the give name that was added via Add or AddSheet. Returns
-// an empty Sprite if one with the name hasn't been added.
-func Get(name string) Sprite {
-	return sprites[name]
+// FrameDesc describes a single frame of a sprite
+type FrameDesc struct {
+	Img *ebiten.Image
+	// Points maps a name to a list of positions relative to the sprite's top left corner
+	Points map[string][]geo.Vec
+	// Rects maps a name to a list of rectangles relative to the sprite's top left corner
+	Rects    map[string][]geo.Rect
+	Duration time.Duration
 }
 
-type frame struct {
-	opts    ebiten.DrawImageOptions
-	anchor  geo.Vec
-	endTime time.Duration
+// Desc holds information that is shared between all instances of the same sprite.
+type Desc struct {
+	Name   string
+	Frames []FrameDesc
 }
 
-// Sprite is an image or collection of images that can play in succession.
+// Sprite is an instance of a sprite described by Desc. This allows one to create many
+// copies of the same sprite, each animating independently, but all of the common data
+// is shared.
 type Sprite struct {
-	src      *ebiten.Image
-	frames   []frame
-	duration time.Duration
-	timeLeft time.Duration
-	curFrame int
-	loop     bool
+	*Desc
+	Loop           bool
+	frame          int
+	untilNextFrame time.Duration
 }
 
-// Begin starts the sprites animation if it has more than one frame. If loop is true then
-// the animation will replay from the beginning each time that it reaches the end.
-func (s *Sprite) Begin(loop bool) {
-	s.timeLeft = s.duration
-	s.curFrame = 0
-	s.loop = loop
+// Img returns the image for the current frame.
+func (s *Sprite) Img() *ebiten.Image {
+	return s.Frames[s.frame].Img
 }
 
-// Ended returns true if it has reached the end of its animation and isn't looping.
+// Points returns the points associated with the given name for the current frame.
+func (s *Sprite) Points(name string) []geo.Vec {
+	frame := s.frame
+	points, ok := s.Frames[frame].Points[name]
+	for !ok && frame > 0 {
+		frame--
+		points, ok = s.Frames[frame].Points[name]
+	}
+	return points
+}
+
+// Rects returns the rectangles associated with the given name for the current frame.
+func (s *Sprite) Rects(name string) []geo.Rect {
+	return s.Frames[s.frame].Rects[name]
+}
+
+// Start the sprite from the first frame.
+func (s *Sprite) Start() {
+	s.frame = 0
+	s.untilNextFrame = s.Frames[s.frame].Duration
+}
+
+// Ended returns true when the sprite is not looping and is done with the last frame.
 func (s *Sprite) Ended() bool {
-	return s.timeLeft <= 0
+	return !s.Loop && s.frame >= len(s.Frames)-1 && s.untilNextFrame <= 0
 }
 
-// Update advances the sprite by the given time, changing frames when needed.
+// Update subtracts dt from the time remaining on the current frame then advances the
+// frame when it reaches 0. If Loop is true then the animation will start back from
+// the beginning after reaching the end.
 func (s *Sprite) Update(dt time.Duration) {
-	s.timeLeft -= dt
-	if s.timeLeft <= 0 && s.loop {
-		s.Begin(true)
-	}
-
-	if s.duration-s.timeLeft > s.frames[s.curFrame].endTime {
-		s.curFrame++
-		if s.curFrame >= len(s.frames) {
-			s.curFrame = len(s.frames) - 1
-		}
-	}
-}
-
-// Draw draws the spite's current frame to dst at the given position. The anchor position
-// of the current frame will be placed at pos. The geom parameter can be used to apply
-// extra transformations to the sprite before drawing it.
-func (s *Sprite) Draw(dst *ebiten.Image, pos geo.Vec, geom ebiten.GeoM) {
-	if len(s.frames) == 0 {
+	s.untilNextFrame -= dt
+	if s.Ended() {
 		return
 	}
 
-	pos.Sub(s.frames[s.curFrame].anchor)
-
-	s.frames[s.curFrame].opts.GeoM.Reset()
-	s.frames[s.curFrame].opts.GeoM.Concat(geom)
-	s.frames[s.curFrame].opts.GeoM.Translate(pos.XY())
-	dst.DrawImage(s.src, &s.frames[s.curFrame].opts)
+	if s.untilNextFrame <= 0 {
+		s.frame++
+		if s.Loop && s.frame >= len(s.Frames) {
+			s.frame = 0
+		}
+		s.untilNextFrame = s.Frames[s.frame].Duration
+	}
 }
 
-// Size returns the width and height of the current frame as a vector.
-func (s *Sprite) Size() geo.Vec {
-	return geo.VecPoint(s.frames[s.curFrame].opts.SourceRect.Size())
+// Draw the current frame to dst with the given options.
+func (s *Sprite) Draw(dst *ebiten.Image, opts *ebiten.DrawImageOptions) {
+	if len(s.Frames) == 0 {
+		return
+	}
+
+	dst.DrawImage(s.Frames[s.frame].Img, opts)
 }

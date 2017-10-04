@@ -69,11 +69,16 @@ type Game struct {
 	lastUpdateTime time.Duration
 	lastDrawTime   time.Duration
 	lastTimeSample time.Time
+
+	//
+	test        map[string]*sprite.Desc
+	testSprites []sprite.Sprite
+	counter     time.Duration
 }
 
 // New creates, initializes, and returns a new Game.
 func New(screenWidth, screenHeight int) *Game {
-	sprite.AddSheet(asset.Img("sheet"), asset.SheetDesc("sheet"))
+	// sprite.AddSheet(asset.Img("sheet"), asset.SheetDesc("sheet"))
 
 	cam := camera.New(screenWidth, screenHeight)
 	// cam.MaxDist = 100
@@ -107,6 +112,28 @@ func New(screenWidth, screenHeight int) *Game {
 		groundHB: hitbox{
 			Label:  "ground",
 			Active: true,
+		},
+
+		test: map[string]*sprite.Desc{},
+	}
+
+	descs, err := sprite.Psd(asset.Psd("test"))
+	if err != nil {
+		log.Fatalf("Adding PSD asset 'test' to collection: %v", err)
+	}
+	for i := range descs {
+		g.test[descs[i].Name] = &descs[i]
+	}
+	g.testSprites = []sprite.Sprite{
+		sprite.Sprite{
+			Desc: g.test["white"],
+		},
+		sprite.Sprite{
+			Desc: g.test["white"],
+			Loop: true,
+		},
+		sprite.Sprite{
+			Desc: g.test["green"],
 		},
 	}
 
@@ -196,6 +223,17 @@ func (g *Game) Update() {
 
 	s.update(dt)
 
+	g.counter += dt
+	if g.counter > 5*time.Second {
+		g.counter = 0
+		for i := range g.testSprites {
+			g.testSprites[i].Start()
+		}
+	}
+	for i := range g.testSprites {
+		g.testSprites[i].Update(dt)
+	}
+
 	g.camera.Update(dt)
 
 	g.handleCollisions()
@@ -214,6 +252,18 @@ func (g *Game) Draw(dst *ebiten.Image) {
 	drawStart := time.Now()
 
 	g.states[g.state].draw(dst, g.camera)
+
+	opts := ebiten.DrawImageOptions{}
+	opts.GeoM.Translate(geo.VecXY(50, 100).Minus(g.testSprites[0].Points("anchor")[0]).XY())
+	g.testSprites[0].Draw(dst, &opts)
+
+	opts.GeoM.Reset()
+	opts.GeoM.Translate(geo.VecXY(50, 120).Minus(g.testSprites[1].Points("anchor")[0]).XY())
+	g.testSprites[1].Draw(dst, &opts)
+
+	opts.GeoM.Reset()
+	opts.GeoM.Translate(geo.VecXY(50, 140).Minus(g.testSprites[2].Points("anchor")[0]).XY())
+	g.testSprites[2].Draw(dst, &opts)
 
 	if g.showDebugInfo {
 		drawTime := time.Since(drawStart)
