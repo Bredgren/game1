@@ -26,8 +26,12 @@ var (
 //    Frame <#> <duration>
 //      Rect <name>
 //      Point <name>
+//      Rect* <name>
+//      Point* <name>
+//        If Rect or Point has a * then it will carry to following frames until a Rect/Point
+//        with the same name is present again
 //      Img
-//        <If Img is a folder then the layers it contains are joined, their names don't matter>
+//        If Img is a folder then the layers it contains are joined, their names don't matter
 func Psd(data []byte) ([]Desc, error) {
 	doc, err := gopsd.ParseFromBuffer(data)
 	if err != nil {

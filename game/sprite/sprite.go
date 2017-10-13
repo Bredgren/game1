@@ -40,6 +40,7 @@ func (s *Sprite) Img() *ebiten.Image {
 
 // Points returns the points associated with the given name for the current frame.
 func (s *Sprite) Points(name string) []geo.Vec {
+	// TODO: fill in points and rects on missing frames in Psd
 	frame := s.frame
 	points, ok := s.Frames[frame].Points[name]
 	for !ok && frame > 0 {
