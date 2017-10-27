@@ -44,5 +44,8 @@ func (i *introState) Update(dt time.Duration) {
 }
 
 func (i *introState) Draw(dst *ebiten.Image) {
+	cameraBox := i.game.entityState.BoundingBox[i.game.camera]
+	cameraPos := i.game.entityState.Position[i.game.camera]
+	i.game.background.Draw(dst, cameraBox.Moved(cameraPos.XY()))
 	i.game.render(dst)
 }

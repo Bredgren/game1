@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/Bredgren/game1/game/camera"
 	"github.com/Bredgren/game1/game/util"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
@@ -79,21 +78,19 @@ func newBackground() *background {
 	return b
 }
 
-func (b *background) Draw(dst *ebiten.Image, cam *camera.Camera) {
-	height := geo.Clamp(-cam.Center().Y, 0, b.maxHeight) / b.maxHeight
+func (b *background) Draw(dst *ebiten.Image, viewBounds geo.Rect) {
+	height := geo.Clamp(-viewBounds.MidY(), 0, b.maxHeight) / b.maxHeight
 	dst.Fill(util.LerpColor(b.skycolor1, b.skyclor1, height))
 
-	b.drawClouds(dst, cam)
-	b.drawGround(dst, cam)
+	b.drawClouds(dst, viewBounds)
+	b.drawGround(dst, viewBounds)
 
 	// b.cloudFinder(dst, cam)
 }
 
-func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
-	topLeft := cam.WorldCoords(geo.VecXY(-b.padding, -b.padding))
-	screenSize := geo.VecXYi(dst.Size())
-	bottomRight := cam.WorldCoords(geo.VecXY(b.padding, b.padding).Plus(screenSize))
-	area := geo.RectCornersVec(topLeft, bottomRight)
+func (b *background) drawClouds(dst *ebiten.Image, viewBounds geo.Rect) {
+	area := viewBounds.Inflated(2*b.padding, 2*b.padding)
+	topLeft := geo.VecXY(viewBounds.TopLeft())
 
 	// cutoff is used to create some cloudless gaps
 	cutoff := 0.6
@@ -121,7 +118,7 @@ func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
 		yScale := geo.Map(noise2, 0, 1, b.cloudScaleMin.Y, b.cloudScaleMax.Y)
 		opts.GeoM.Scale(xScale, yScale)
 
-		pos := cam.ScreenCoords(geo.VecXY(x, y))
+		pos := geo.VecXY(x, y).Minus(topLeft)
 		opts.GeoM.Translate(pos.XY())
 
 		cloudIndex := int(math.Floor(noise2 * float64(len(b.clouds)+1)))
@@ -129,18 +126,16 @@ func (b *background) drawClouds(dst *ebiten.Image, cam *camera.Camera) {
 	}
 }
 
-func (b *background) drawGround(dst *ebiten.Image, cam *camera.Camera) {
-	dstSize := geo.VecXYi(dst.Size())
-	cameraBottomRight := cam.WorldCoords(dstSize)
-	if cameraBottomRight.Y < 0 {
+func (b *background) drawGround(dst *ebiten.Image, viewBounds geo.Rect) {
+	if viewBounds.Bottom() < 0 {
 		return // Ground is not visible
 	}
 
-	cameraTopLeft := cam.WorldCoords(geo.Vec0)
-	groundTopLeft := geo.VecXY(cameraTopLeft.X, 0)
-	topLeft := cam.ScreenCoords(groundTopLeft)
+	cameraTopLeft := geo.VecXY(viewBounds.TopLeft())
+	groundTopLeft := geo.VecXY(viewBounds.Left(), 0)
+	topLeft := groundTopLeft.Minus(cameraTopLeft)
 
-	groundArea := geo.RectCornersVec(topLeft, dstSize)
+	groundArea := geo.RectCornersVec(topLeft, geo.VecXY(viewBounds.Size()))
 
 	opts := ebiten.DrawImageOptions{}
 	opts.GeoM.Scale(groundArea.Size())

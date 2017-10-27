@@ -381,6 +381,7 @@ func (g *Game) render(dst *ebiten.Image) {
 			_ = rotation
 		}
 	}
+	g.entityState.Position[g.camera].Add(geo.VecXY(10, -0.5))
 }
 
 func (g *Game) followUpdate(dt time.Duration) {
