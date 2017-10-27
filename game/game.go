@@ -6,11 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Bredgren/game1/game/asset"
-	"github.com/Bredgren/game1/game/camera"
+	"github.com/Bredgren/game1/game/comp"
+	"github.com/Bredgren/game1/game/gamestate"
 	"github.com/Bredgren/game1/game/keymap"
 	"github.com/Bredgren/game1/game/keymap/button"
-	"github.com/Bredgren/game1/game/sprite"
 	"github.com/Bredgren/geo"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
@@ -48,22 +47,22 @@ const (
 
 // Game manages the overall state of the game.
 type Game struct {
-	state         gameStateName
-	states        map[gameStateName]gameState
+	state         gamestate.State
+	states        map[gamestate.State]gamestate.GameState
 	showDebugInfo bool
 	timeScale     float64
 	lastUpdate    time.Time
-	camera        *camera.Camera
 	background    *background
-	// inputDisabled       bool
+
 	canToggleFullscreen bool
 	canTogglePause      bool
 
 	keymap keymap.Layers
+	input  input
 
-	player *player
-
-	groundHB hitbox
+	entityState *state
+	camera      entity
+	player      entity
 
 	// Fields only for debugging
 	lastUpdateTime time.Duration
@@ -71,70 +70,62 @@ type Game struct {
 	lastTimeSample time.Time
 
 	//
-	test        map[string]*sprite.Desc
-	testSprites []sprite.Sprite
-	counter     time.Duration
+	// test        map[string]*sprite.Desc
+	// testSprites []sprite.Sprite
+	// counter     time.Duration
 }
 
 // New creates, initializes, and returns a new Game.
 func New(screenWidth, screenHeight int) *Game {
-	// sprite.AddSheet(asset.Img("sheet"), asset.SheetDesc("sheet"))
-
-	cam := camera.New(screenWidth, screenHeight)
-	// cam.MaxDist = 100
-	// cam.MaxSpeed = 600
-	// cam.Ease = geo.EaseOutExpo
+	// cam := camera.New(screenWidth, screenHeight)
+	// // cam.MaxDist = 100
+	// // cam.MaxSpeed = 600
+	// // cam.Ease = geo.EaseOutExpo
+	// //
+	// // cam.MaxDist = 80
+	// // cam.MaxSpeed = 600
+	// // cam.Ease = geo.EaseInExpo
 	//
-	// cam.MaxDist = 80
-	// cam.MaxSpeed = 600
-	// cam.Ease = geo.EaseInExpo
+	// cam.Shaker.Amplitude = 30
+	// cam.Shaker.Duration = 1 * time.Second
+	// cam.Shaker.Frequency = 10
+	// cam.Shaker.Falloff = geo.EaseOutQuad
 
-	cam.Shaker.Amplitude = 30
-	cam.Shaker.Duration = 1 * time.Second
-	cam.Shaker.Frequency = 10
-	cam.Shaker.Falloff = geo.EaseOutQuad
+	es := newState(100)
 
-	p := newPlayer(cam)
+	camera, err := es.newEntity()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	es.Mask[camera] = comp.Position | comp.BoundingBox
+	es.Position[camera] = geo.Vec0
+	es.BoundingBox[camera] = geo.RectXYWH(
+		float64(-screenWidth/2), float64(-screenHeight/2), float64(screenWidth), float64(screenHeight))
+
+	player, err := es.newEntity()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	es.Mask[player] = comp.Camera
+	es.Camera[player] = camera
 
 	bg := newBackground()
 
 	g := &Game{
-		state:         intro,
+		state:         gamestate.Intro,
 		showDebugInfo: true,
 		timeScale:     1.0,
-		camera:        cam,
 		background:    bg,
 
 		keymap: make(keymap.Layers, numInputLayers),
 
-		player: p,
+		entityState: es,
+		player:      player,
+		camera:      camera,
 
-		groundHB: hitbox{
-			Label:  "ground",
-			Active: true,
-		},
-
-		test: map[string]*sprite.Desc{},
-	}
-
-	descs, err := sprite.Psd(asset.Psd("test"))
-	if err != nil {
-		log.Fatalf("Adding PSD asset 'test' to collection: %v", err)
-	}
-	for i := range descs {
-		g.test[descs[i].Name] = &descs[i]
-	}
-	g.testSprites = []sprite.Sprite{
-		sprite.Sprite{
-			Desc: g.test["white"],
-		},
-		sprite.Sprite{
-			Desc: g.test["white"],
-			Loop: true,
-		},
-		sprite.Sprite{
-			Desc: g.test["green"],
-		},
+		// test: map[string]*sprite.Desc{},
 	}
 
 	generalActions := keymap.ButtonHandlerMap{
@@ -165,25 +156,44 @@ func New(screenWidth, screenHeight int) *Game {
 	g.keymap[generalLayer].GamepadBtn.Set(ebiten.GamepadButton6, fullscreen)
 
 	playerActions := keymap.ButtonHandlerMap{
-		left:   p.handleLeft,
-		right:  p.handleRight,
-		jump:   p.handleJump,
-		punch:  p.handlePunch,
-		launch: p.handleLaunch,
+		left:   g.input.handleLeft,
+		right:  g.input.handleRight,
+		jump:   g.input.handleJump,
+		punch:  g.input.handlePunch,
+		launch: g.input.handleLaunch,
 	}
 	playerAxisActions := keymap.AxisHandlerMap{
-		move:   p.handleMove,
-		punchH: p.handlePunchH,
-		punchV: p.handlePunchV,
+		move:   g.input.handleMove,
+		punchH: g.input.handlePunchH,
+		punchV: g.input.handlePunchV,
 	}
 	g.keymap[playerLayer] = keymap.New(playerActions, playerAxisActions)
 	setDefaultKeyMap(g.keymap[playerLayer])
 
-	g.states = map[gameStateName]gameState{
-		intro:    newIntroState(p, screenHeight, cam, bg),
-		mainMenu: newMainMenu(p, screenHeight, screenWidth, cam, bg, g.keymap),
-		play:     newPlayState(p, screenHeight, cam, bg),
+	g.states = map[gamestate.State]gamestate.GameState{
+		gamestate.Intro: newIntroState(g),
+		// mainMenu: newMainMenu(p, screenHeight, screenWidth, cam, bg, g.keymap),
+		// play:     newPlayState(p, screenHeight, cam, bg),
 	}
+	// descs, err := sprite.Psd(asset.Psd("test"))
+	// if err != nil {
+	// 	log.Fatalf("Adding PSD asset 'test' to collection: %v", err)
+	// }
+	// for i := range descs {
+	// 	g.test[descs[i].Name] = &descs[i]
+	// }
+	// g.testSprites = []sprite.Sprite{
+	// 	sprite.Sprite{
+	// 		Desc: g.test["white"],
+	// 	},
+	// 	sprite.Sprite{
+	// 		Desc: g.test["white"],
+	// 		Loop: true,
+	// 	},
+	// 	sprite.Sprite{
+	// 		Desc: g.test["green"],
+	// 	},
+	// }
 
 	// // This keymap layer is for disabling all input
 	// disableKeyMap := keymap.NewMap()
@@ -212,31 +222,31 @@ func (g *Game) Update() {
 	g.keymap.Update()
 
 	s := g.states[g.state]
-	next := s.nextState()
+	next := s.NextState()
 	if next != g.state {
 		log.Println("Change state from", g.state, "to", next)
-		s.end()
+		s.End()
 		s = g.states[next]
-		s.begin(g.state)
+		s.Begin(g.state)
 		g.state = next
 	}
 
-	s.update(dt)
+	s.Update(dt)
 
-	g.counter += dt
-	if g.counter > 5*time.Second {
-		g.counter = 0
-		for i := range g.testSprites {
-			g.testSprites[i].Start()
-		}
-	}
-	for i := range g.testSprites {
-		g.testSprites[i].Update(dt)
-	}
+	// g.counter += dt
+	// if g.counter > 5*time.Second {
+	// 	g.counter = 0
+	// 	for i := range g.testSprites {
+	// 		g.testSprites[i].Start()
+	// 	}
+	// }
+	// for i := range g.testSprites {
+	// 	g.testSprites[i].Update(dt)
+	// }
 
-	g.camera.Update(dt)
+	// g.camera.Update(dt)
 
-	g.handleCollisions()
+	// g.handleCollisions()
 
 	if g.showDebugInfo {
 		updateTime := time.Since(updateStart)
@@ -251,19 +261,19 @@ func (g *Game) Update() {
 func (g *Game) Draw(dst *ebiten.Image) {
 	drawStart := time.Now()
 
-	g.states[g.state].draw(dst, g.camera)
+	g.states[g.state].Draw(dst)
 
-	opts := ebiten.DrawImageOptions{}
-	opts.GeoM.Translate(geo.VecXY(50, 100).Minus(g.testSprites[0].Points("anchor")[0]).XY())
-	g.testSprites[0].Draw(dst, &opts)
-
-	opts.GeoM.Reset()
-	opts.GeoM.Translate(geo.VecXY(50, 120).Minus(g.testSprites[1].Points("anchor")[0]).XY())
-	g.testSprites[1].Draw(dst, &opts)
-
-	opts.GeoM.Reset()
-	opts.GeoM.Translate(geo.VecXY(50, 140).Minus(g.testSprites[2].Points("anchor")[0]).XY())
-	g.testSprites[2].Draw(dst, &opts)
+	// opts := ebiten.DrawImageOptions{}
+	// opts.GeoM.Translate(geo.VecXY(50, 100).Minus(g.testSprites[0].Points("anchor")[0]).XY())
+	// g.testSprites[0].Draw(dst, &opts)
+	//
+	// opts.GeoM.Reset()
+	// opts.GeoM.Translate(geo.VecXY(50, 120).Minus(g.testSprites[1].Points("anchor")[0]).XY())
+	// g.testSprites[1].Draw(dst, &opts)
+	//
+	// opts.GeoM.Reset()
+	// opts.GeoM.Translate(geo.VecXY(50, 140).Minus(g.testSprites[2].Points("anchor")[0]).XY())
+	// g.testSprites[2].Draw(dst, &opts)
 
 	if g.showDebugInfo {
 		drawTime := time.Since(drawStart)
@@ -307,13 +317,114 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 	ebitenutil.DebugPrint(dst, strings.Join(info, "\n"))
 }
 
-func (g *Game) handleCollisions() {
-	for _, box := range g.player.hitboxes() {
-		if !box.Active {
+// func (g *Game) handleCollisions() {
+// 	// for _, box := range g.player.hitboxes() {
+// 	// 	if !box.Active {
+// 	// 		continue
+// 	// 	}
+// 	// 	if box.Bounds.Bottom() > 0 {
+// 	// 		box.Callback(&g.groundHB)
+// 	// 	}
+// 	// }
+// }
+
+func (g *Game) render(dst *ebiten.Image) {
+	entComp := comp.Position // | comp.Sprite
+	cameraComp := comp.Position | comp.BoundingBox
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) {
 			continue
 		}
-		if box.Bounds.Bottom() > 0 {
-			box.Callback(&g.groundHB)
+
+		if m.Contains(comp.Camera) {
+			if !state.Mask[state.Camera[e]].Contains(cameraComp) {
+				continue
+			}
+
+			pos := state.Position[e]
+
+			rotation := 0.0
+			if m.Contains(comp.Rotation) {
+				rotation = state.Rotation[e]
+			}
+
+			camera := state.Camera[e]
+			cameraPos := state.Position[camera]
+			cameraBounds := state.BoundingBox[camera].Moved(cameraPos.XY())
+
+			if m.Contains(comp.BoundingBox) {
+				entityBounds := state.BoundingBox[e].Moved(pos.XY())
+				if cameraBounds.CollideRect(entityBounds) {
+					screenPos := pos.Minus(geo.VecXY(cameraBounds.TopLeft()))
+					_ = screenPos
+					_ = rotation
+				}
+			} else {
+				if cameraBounds.CollidePoint(pos.XY()) {
+					screenPos := pos.Minus(geo.VecXY(cameraBounds.TopLeft()))
+					_ = screenPos
+					_ = rotation
+				}
+			}
+		} else {
+			// No camera, draw directly to screen
+			pos := state.Position[e]
+
+			rotation := 0.0
+			if m.Contains(comp.Rotation) {
+				rotation = state.Rotation[e]
+			}
+
+			_ = pos
+			_ = rotation
+		}
+	}
+}
+
+func (g *Game) followUpdate(dt time.Duration) {
+	entComp := comp.Position | comp.Follow
+	targetComp := comp.Position
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) || !state.Mask[state.Follow[e].Target].Contains(targetComp) {
+			continue
+		}
+		pos := state.Position[e]
+
+		params := state.Follow[e]
+		targetPos := state.Position[params.Target]
+
+		distToTarget2 := targetPos.Dist2(pos)
+		max2 := params.MaxDist * params.MaxDist
+		if distToTarget2 > max2 {
+			state.Position[e] = targetPos.Plus(pos.Minus(targetPos).WithLen(params.MaxDist))
+		} else {
+			ratio := distToTarget2 / max2
+			speed := params.Ease(ratio) * params.MaxSpeed
+			vel := targetPos.Minus(pos).WithLen(speed)
+			state.Position[e].Add(vel.Times(dt.Seconds()))
+		}
+	}
+}
+
+func (g *Game) shakeUpdate(dt time.Duration) {
+	entComp := comp.Position | comp.Shake
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) {
+			continue
+		}
+		pos := &state.Position[e]
+		params := &state.Shake[e]
+		params.Time.Add(dt)
+		if params.Shaker.Falloff != nil {
+			pos.Add(params.Shaker.Shake(params.Time))
+		} else {
+			pos.Add(params.Shaker.ShakeConst(params.Time))
 		}
 	}
 }
