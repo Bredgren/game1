@@ -16,8 +16,12 @@ type introState struct {
 func newIntroState(game *Game) *introState {
 	game.entityState.Mask[game.player] = comp.Position | comp.Camera
 	game.entityState.Position[game.player] = geo.Vec0
-	// p.SetPos(geo.Vec0)
-	// cam.Target = fixedCameraTarget{geo.VecXY(0, -float64(screenHeight)*0.4)}
+
+	game.entityState.Mask[game.camera] |= comp.Shake
+	cameraHeight := game.entityState.BoundingBox[game.camera].H
+	game.entityState.Position[game.camera] = geo.VecXY(0, -cameraHeight*0.4)
+	game.entityState.Shake[game.camera].Shaker.Amplitude = 10
+	game.entityState.Shake[game.camera].Shaker.Frequency = 200
 	// p.awaken()
 	return &introState{
 		game: game,
@@ -41,6 +45,7 @@ func (i *introState) NextState() gamestate.State {
 
 func (i *introState) Update(dt time.Duration) {
 	// i.p.update(dt)
+	i.game.shakeUpdate(dt)
 }
 
 func (i *introState) Draw(dst *ebiten.Image) {

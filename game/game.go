@@ -381,7 +381,6 @@ func (g *Game) render(dst *ebiten.Image) {
 			_ = rotation
 		}
 	}
-	g.entityState.Position[g.camera].Add(geo.VecXY(10, -0.5))
 }
 
 func (g *Game) followUpdate(dt time.Duration) {
@@ -421,7 +420,7 @@ func (g *Game) shakeUpdate(dt time.Duration) {
 		}
 		pos := &state.Position[e]
 		params := &state.Shake[e]
-		params.Time.Add(dt)
+		params.Time = params.Time.Add(dt)
 		if params.Shaker.Falloff != nil {
 			pos.Add(params.Shaker.Shake(params.Time))
 		} else {
