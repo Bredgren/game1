@@ -8,12 +8,16 @@ const (
 	None Mask = 0
 	// Position component is a 2D location in world space.
 	Position Mask = 1 << iota
+	// HitPoints destroys the entity when below 0.
+	HitPoints
 	// Velocity component gives an entity motion.
 	Velocity
 	// Rotation component allows and entity to rotate.
 	Rotation
 	// Gravity accelerates an entity vertically.
 	Gravity
+	// CollidesWithGround prevents an entity from moving bellow the ground.
+	CollidesWithGround
 	// BoundingBox specifies the bounds of the entity. It should be specified as if the
 	// entity is at the origin.
 	BoundingBox
@@ -23,6 +27,14 @@ const (
 	Follow
 	// Shake jitters an entity's position
 	Shake
+	// Sprite is the current image to use for drawing.
+	Sprite
+	// Animation updates the Sprite component to create an animation.
+	Animation
+	// Hitbox is a collection of rects that difine where the entity takes damage.
+	Hitbox
+	// Hurtbox is a collection of rect that define where the entity gives damage.
+	Hurtbox
 )
 
 // Contains retursn true if m contains other.

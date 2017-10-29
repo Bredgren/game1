@@ -329,9 +329,10 @@ func (g *Game) drawDebugInfo(dst *ebiten.Image) {
 // }
 
 func (g *Game) render(dst *ebiten.Image) {
-	entComp := comp.Position // | comp.Sprite
+	entComp := comp.Position | comp.Sprite
 	cameraComp := comp.Position | comp.BoundingBox
 	state := g.entityState
+	var opts ebiten.DrawImageOptions
 	for i, m := range state.Mask {
 		e := entity(i)
 		if !m.Contains(entComp) {
@@ -357,15 +358,18 @@ func (g *Game) render(dst *ebiten.Image) {
 			if m.Contains(comp.BoundingBox) {
 				entityBounds := state.BoundingBox[e].Moved(pos.XY())
 				if cameraBounds.CollideRect(entityBounds) {
-					screenPos := pos.Minus(geo.VecXY(cameraBounds.TopLeft()))
-					_ = screenPos
-					_ = rotation
+					topLeft := geo.VecXY(entityBounds.TopLeft())
+					screenPos := topLeft.Minus(geo.VecXY(cameraBounds.TopLeft()))
+					opts.GeoM.Rotate(rotation)
+					opts.GeoM.Translate(screenPos.XY())
+					dst.DrawImage(state.Sprite[e], &opts)
 				}
 			} else {
 				if cameraBounds.CollidePoint(pos.XY()) {
 					screenPos := pos.Minus(geo.VecXY(cameraBounds.TopLeft()))
-					_ = screenPos
-					_ = rotation
+					opts.GeoM.Rotate(rotation)
+					opts.GeoM.Translate(screenPos.XY())
+					dst.DrawImage(state.Sprite[e], &opts)
 				}
 			}
 		} else {
@@ -377,8 +381,50 @@ func (g *Game) render(dst *ebiten.Image) {
 				rotation = state.Rotation[e]
 			}
 
-			_ = pos
-			_ = rotation
+			opts.GeoM.Rotate(rotation)
+			opts.GeoM.Translate(pos.XY())
+			dst.DrawImage(state.Sprite[e], &opts)
+		}
+	}
+}
+
+func (g *Game) movementUpdate(dt time.Duration) {
+	entComp := comp.Position | comp.Velocity
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) {
+			continue
+		}
+		state.Position[e].Add(state.Velocity[e].Times(dt.Seconds()))
+	}
+}
+
+func (g *Game) gravityUpdate(dt time.Duration) {
+	entComp := comp.Velocity | comp.Gravity
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) {
+			continue
+		}
+		state.Velocity[e].Add(state.Gravity[e].Times(dt.Seconds()))
+	}
+}
+
+func (g *Game) groundCollideUpdate(dt time.Duration) {
+	entComp := comp.Position | comp.CollidesWithGround
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) {
+			continue
+		}
+		if state.Position[e].Y > 0 {
+			state.Position[e].Y = 0
+			// Also 0 vertical velocity. No need to confirm that the entity has the Velocity
+			// component first since this will have no effect if not present.
+			state.Velocity[e].Y = 0
 		}
 	}
 }
@@ -427,4 +473,35 @@ func (g *Game) shakeUpdate(dt time.Duration) {
 			pos.Add(params.Shaker.ShakeConst(params.Time))
 		}
 	}
+}
+
+func (g *Game) animationUpdate(dt time.Duration) {
+	entComp := comp.Animation | comp.Sprite
+	state := g.entityState
+	for i, m := range state.Mask {
+		e := entity(i)
+		if !m.Contains(entComp) {
+			continue
+		}
+
+		params := &state.Animation[e]
+		params.timeLeft -= dt
+		if params.timeLeft <= 0 {
+			params.AdvanceFrame()
+			state.Sprite[e] = params.CurrentImg()
+			if m.Contains(comp.Hitbox) {
+				state.Hitbox[e] = params.CurrentHitbox()
+			}
+			if m.Contains(comp.Hurtbox) {
+				state.Hurtbox[e] = params.CurrentHurtbox()
+			}
+			if m.Contains(comp.BoundingBox) {
+				anchor := params.CurrentAnchor()
+				state.BoundingBox[e].SetTopLeft(anchor.Times(-1).XY())
+			}
+		}
+	}
+}
+
+func (g *Game) damageUpdate(dt time.Duration) {
 }

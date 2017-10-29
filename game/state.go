@@ -6,6 +6,7 @@ import (
 
 	"github.com/Bredgren/game1/game/comp"
 	"github.com/Bredgren/geo"
+	"github.com/hajimehoshi/ebiten"
 )
 
 type entity int
@@ -55,11 +56,15 @@ type state struct {
 	Position    []geo.Vec
 	Velocity    []geo.Vec
 	Rotation    []float64
-	Gravity     []float64
+	Gravity     []geo.Vec
 	BoundingBox []geo.Rect
 	Camera      []entity
 	Follow      []followParams
 	Shake       []shakeParams
+	Sprite      []*ebiten.Image
+	Hitbox      [][]geo.Rect
+	Hurtbox     [][]geo.Rect
+	Animation   []animationParams
 }
 
 func newState(maxEntities int) *state {
@@ -69,11 +74,15 @@ func newState(maxEntities int) *state {
 		Position:    make([]geo.Vec, maxEntities),
 		Velocity:    make([]geo.Vec, maxEntities),
 		Rotation:    make([]float64, maxEntities),
-		Gravity:     make([]float64, maxEntities),
+		Gravity:     make([]geo.Vec, maxEntities),
 		BoundingBox: make([]geo.Rect, maxEntities),
 		Camera:      make([]entity, maxEntities),
 		Follow:      make([]followParams, maxEntities),
 		Shake:       make([]shakeParams, maxEntities),
+		Sprite:      make([]*ebiten.Image, maxEntities),
+		Hitbox:      make([][]geo.Rect, maxEntities),
+		Hurtbox:     make([][]geo.Rect, maxEntities),
+		Animation:   make([]animationParams, maxEntities),
 	}
 }
 
@@ -92,4 +101,54 @@ type followParams struct {
 type shakeParams struct {
 	Shaker geo.Shaker
 	Time   time.Time
+}
+
+type animationParams struct {
+	currentAnimation string
+	currentFrame     int
+	timeLeft         time.Duration
+	Animations       map[string][]frameDesc
+}
+
+func (a *animationParams) Play(anim string) {
+	a.currentFrame = 0
+	a.currentAnimation = anim
+	a.timeLeft = a.Animations[anim][0].Duration
+}
+
+func (a *animationParams) AdvanceFrame() {
+	maxFrame := len(a.Animations[a.currentAnimation]) - 1
+	if a.currentFrame >= maxFrame {
+		return
+	}
+	a.currentFrame++
+	a.timeLeft = a.Animations[a.currentAnimation][a.currentFrame].Duration
+}
+
+func (a *animationParams) Ended() bool {
+	return a.currentFrame == len(a.Animations[a.currentAnimation])-1 && a.timeLeft <= 0
+}
+
+func (a *animationParams) CurrentImg() *ebiten.Image {
+	return a.Animations[a.currentAnimation][a.currentFrame].Img
+}
+
+func (a *animationParams) CurrentHitbox() []geo.Rect {
+	return a.Animations[a.currentAnimation][a.currentFrame].Hitbox
+}
+
+func (a *animationParams) CurrentHurtbox() []geo.Rect {
+	return a.Animations[a.currentAnimation][a.currentFrame].Hurtbox
+}
+
+func (a *animationParams) CurrentAnchor() geo.Vec {
+	return a.Animations[a.currentAnimation][a.currentFrame].Anchor
+}
+
+type frameDesc struct {
+	Img      *ebiten.Image
+	Duration time.Duration
+	Hitbox   []geo.Rect
+	Hurtbox  []geo.Rect
+	Anchor   geo.Vec
 }
